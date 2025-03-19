@@ -26,7 +26,6 @@ const UsersPage: React.FC = () => {
     handleTableChange 
   } = useUsers()
 
-console.log(users)
 
   // Get all unique roles from user data for dynamic filtering
   const getRoleFilters = () => {

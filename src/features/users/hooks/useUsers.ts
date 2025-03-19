@@ -62,7 +62,6 @@ export const useUsers = () => {
       }
       
       const userData = await getUserById(id)
-      console.log("User data received from API:", userData)
       
       // Store in query cache and component state
       queryClient.setQueryData([USER_DETAIL_QUERY_KEY, id], userData)

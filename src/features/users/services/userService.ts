@@ -40,8 +40,6 @@ export const getUserById = async (id: string): Promise<User> => {
     
     // API returns { data: User, status: "success" } structure
     const userData = response.data.data || response.data;
-    console.log("Raw API response:", response.data);
-    console.log("Extracted user data:", userData);
     
     return userData;
   } catch (error: any) {
