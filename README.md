@@ -90,7 +90,7 @@ The platform uses NextAuth.js for authentication with:
    npm run dev
    ```
 
-5. **Open [http://localhost:3000](http://localhost:3000)**
+5. **Open [http://localhost:3001](http://localhost:3001)**
 
 ## 🧪 Testing
 
