@@ -58,7 +58,7 @@ const UsersPage: React.FC = () => {
             Buscar
           </Button>
           <Button
-            onClick={() => clearFilters && clearFilters()}
+            onClick={() => clearFilters?.()}
             size="small"
             style={{ width: 90 }}
           >
