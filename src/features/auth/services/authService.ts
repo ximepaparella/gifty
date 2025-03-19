@@ -2,6 +2,7 @@ import axios from 'axios'
 import { API_URL } from '@/config/constants'
 import Cookies from 'js-cookie'
 import { AuthSession, UserInfo } from '../types'
+import { extractApiResponse } from '@/utils/apiUtils'
 
 export interface LoginCredentials {
   email: string
@@ -63,7 +64,9 @@ export const authService = {
         throw new Error(response.data?.message || 'Login failed')
       }
       
-      const { user, token } = response.data.data
+      // Extract response data using the utility
+      const responseData = extractApiResponse<LoginResponse>(response)
+      const { user, token } = responseData
       
       // Store in both localStorage and cookies
       localStorage.setItem('auth_token', token)
@@ -145,10 +148,12 @@ export const register = async (userData: RegisterData): Promise<AuthResponse> =>
     const response = await axios.post(`${API_URL}/users`, userData)
     
     if (response.data.status === 'success') {
+      const responseData = extractApiResponse<{ user: UserInfo; token: string }>(response)
+      
       return {
         success: true,
         message: 'User registered successfully',
-        data: response.data.data
+        data: responseData
       }
     }
     

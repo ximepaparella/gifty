@@ -1,47 +1,40 @@
 import React, { useEffect } from 'react'
-import { Table, Space, Button, Popconfirm, Card, Row, Col, Input, Tag, Breadcrumb } from 'antd'
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Table, Space, Button, Popconfirm, Card, Row, Col, Input, Tag, Tooltip } from 'antd'
+import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import DashboardLayout from '@/layouts/DashboardLayout'
-import { useUsers } from '@/features/users/hooks/useUsers'
-import { User } from '@/features/users/types'
+import { useStores } from '@/features/stores/hooks/useStores'
+import { useStoreOwners } from '@/features/stores/hooks/useStoreOwners'
+import { Store } from '@/features/stores/types'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { FilterValue, TablePaginationConfig } from 'antd/es/table/interface'
-import Link from 'next/link'
 
-// Ensure React Strict Mode doesn't cause findDOMNode warnings by disabling it in development
-// This can be removed once Ant Design updates their components to not use findDOMNode
-const strictModeOverride = {
-  unstable_strictMode: false
-}
-
-const UsersPage: React.FC = () => {
+const StoresPage: React.FC = () => {
   const router = useRouter()
   const { 
-    users, 
+    stores, 
     loading, 
     pagination, 
-    handleDeleteUser, 
+    handleDeleteStore, 
     handleTableChange 
-  } = useUsers()
-
-
-  // Get all unique roles from user data for dynamic filtering
-  const getRoleFilters = () => {
-    const roles = new Set(users.map(user => user.role))
-    return Array.from(roles).map(role => ({
-      text: role.charAt(0).toUpperCase() + role.slice(1),
-      value: role
-    }))
-  }
+  } = useStores()
+  
+  // Debug stores data in component
+  useEffect(() => {
+    console.log("Stores data in component:", stores);
+    console.log("Store count:", stores?.length);
+  }, [stores]);
+  
+  // Use the hook to resolve owner information
+  const { getOwnerById, isLoading: loadingOwners } = useStoreOwners()
 
   // Define custom search filter
-  const getColumnSearchProps = (dataIndex: keyof User) => ({
+  const getColumnSearchProps = (dataIndex: keyof Store) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
       <div style={{ padding: 8 }}>
         <Input
-          placeholder={`Search ${dataIndex}`}
+          placeholder={`Buscar ${dataIndex}`}
           value={selectedKeys[0]}
           onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
           onPressEnter={() => confirm()}
@@ -58,7 +51,7 @@ const UsersPage: React.FC = () => {
             Buscar
           </Button>
           <Button
-            onClick={() => clearFilters?.()}
+            onClick={() => clearFilters && clearFilters()}
             size="small"
             style={{ width: 90 }}
           >
@@ -70,66 +63,99 @@ const UsersPage: React.FC = () => {
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
     ),
-    onFilter: (value: any, record: User) =>
+    onFilter: (value: any, record: Store) =>
       record[dataIndex]
         ? record[dataIndex].toString().toLowerCase().includes(value.toString().toLowerCase())
         : false
   })
 
   // Table columns with added filtering and sorting
-  const columns: ColumnsType<User> = [
+  const columns: ColumnsType<Store> = [
     {
       title: 'Nombre',
       dataIndex: 'name',
       key: 'name',
       sorter: true,
-      width: '20%',
+      width: '15%',
       ...getColumnSearchProps('name')
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-      width: '25%',
+      width: '15%',
       ...getColumnSearchProps('email')
     },
     {
-      title: 'Rol',
-      dataIndex: 'role',
-      key: 'role',
+      title: 'Propietario',
+      dataIndex: 'ownerId',
+      key: 'ownerId',
       width: '15%',
-      sorter: true,
-      filters: getRoleFilters(),
-      onFilter: (value: any, record: User) => record.role === value,
-      render: (role: string) => (
-        <Tag color={role === 'admin' ? 'red' : role === 'store_manager' ? 'blue' : 'green'}>
-          {role.charAt(0).toUpperCase() + role.slice(1)}
-        </Tag>
-      )
+      render: (ownerId: string) => {
+        const owner = getOwnerById(ownerId)
+        
+        if (loadingOwners) {
+          return <span>Cargando...</span>
+        }
+        
+        if (!owner) {
+          return (
+            <Tooltip title={`ID: ${ownerId}`}>
+              <Tag icon={<UserOutlined />} color="default">
+                Propietario no encontrado
+              </Tag>
+            </Tooltip>
+          )
+        }
+        
+        return (
+          <Tooltip title={`ID: ${ownerId}`}>
+            <Tag 
+              icon={<UserOutlined />} 
+              color={owner.role === 'admin' ? 'red' : 'blue'}
+            >
+              {owner.name} ({owner.role === 'admin' ? 'Admin' : 'Gerente'})
+            </Tag>
+          </Tooltip>
+        )
+      }
+    },
+    {
+      title: 'Teléfono',
+      dataIndex: 'phone',
+      key: 'phone',
+      width: '10%',
+    },
+    {
+      title: 'Dirección',
+      dataIndex: 'address',
+      key: 'address',
+      width: '20%',
+      ...getColumnSearchProps('address')
     },
     {
       title: 'Fecha de creación',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: '15%',
+      width: '10%',
       sorter: true,
       render: (date: string) => new Date(date).toLocaleDateString()
     },
     {
       title: 'Acciones',
       key: 'actions',
-      width: '25%',
-      render: (_: any, record: User) => (
+      width: '15%',
+      render: (_: any, record: Store) => (
         <Space size="middle">
           <Button 
             icon={<EditOutlined />} 
-            onClick={() => router.push(`/dashboard/users/edit/${record.id}`)}
+            onClick={() => router.push(`/dashboard/stores/edit/${record._id}`)}
           >
             Editar
           </Button>
           <Popconfirm
-            title="¿Estás seguro de querer borrar este usuario?"
-            onConfirm={() => handleDeleteUser(record.id)}
+            title="¿Estás seguro de querer borrar esta tienda?"
+            onConfirm={() => handleDeleteStore(record._id)}
             okText="Sí"
             cancelText="No"
             placement="left"
@@ -144,7 +170,7 @@ const UsersPage: React.FC = () => {
   ]
 
   // Enhanced table change handler for sorting, filtering, and pagination
-  const onTableChange: TableProps<User>['onChange'] = (
+  const onTableChange: TableProps<Store>['onChange'] = (
     pagination: TablePaginationConfig,
     filters: Record<string, FilterValue | null>,
     sorter: any
@@ -155,33 +181,33 @@ const UsersPage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Usuarios | Gifty Platform</title>
+        <title>Tiendas | Gifty Platform</title>
       </Head>
-      <DashboardLayout title="Usuarios" requiredRoles={['admin']}>
-
+      <DashboardLayout title="Tiendas" requiredRoles={['admin', 'store_manager']}>
         <Row gutter={[16, 16]}>
           <Col span={24} style={{ textAlign: 'right' }}>
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
-              onClick={() => router.push('/dashboard/users/create')}
+              onClick={() => router.push('/dashboard/stores/create')}
             >
-              Añadir usuario
+              Añadir tienda
             </Button>
           </Col>
           <Col span={24}>
             <Card>
-              <Table<User>
-                dataSource={users} 
+              <Table<Store>
+                dataSource={stores} 
                 columns={columns} 
-                rowKey="id"
+                key={stores.map(store => store._id).toString()}
+                rowKey="_id"
                 loading={loading}
                 pagination={{
                   current: pagination.current,
                   pageSize: pagination.pageSize,
                   total: pagination.total,
                   showSizeChanger: true,
-                  showTotal: (total) => `Total: ${total} usuarios`
+                  showTotal: (total) => `Total: ${total} tiendas`
                 }}
                 onChange={onTableChange}
                 scroll={{ x: 1000 }}
@@ -194,4 +220,4 @@ const UsersPage: React.FC = () => {
   )
 }
 
-export default UsersPage 
+export default StoresPage 
