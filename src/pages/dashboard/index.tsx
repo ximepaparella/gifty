@@ -1,7 +1,4 @@
-import { useEffect, useState } from 'react'
-import { Row, Col, Spin } from 'antd'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/router'
+import { Row, Col } from 'antd'
 import Head from 'next/head'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import SummaryCards from '@/features/dashboard/components/SummaryCards'
@@ -12,56 +9,12 @@ import RecentOrdersTable from '@/features/dashboard/components/RecentOrdersTable
 import RevenueByChannel from '@/features/dashboard/components/RevenueByChannel'
 import VouchersByStore from '@/features/dashboard/components/VouchersByStore'
 import { fetchDashboardData } from '@/features/dashboard/services/dashboardService'
-import { DashboardData } from '@/mockups/dashboardData'
+
+// Get data synchronously
+const dashboardData = fetchDashboardData()
 
 export default function Dashboard() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/login')
-    }
-  }, [status, router])
-
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      if (status === 'authenticated') {
-        try {
-          setLoading(true)
-          const data = await fetchDashboardData()
-          setDashboardData(data)
-        } catch (error) {
-          console.error('Failed to load dashboard data:', error)
-        } finally {
-          setLoading(false)
-        }
-      }
-    }
-
-    loadDashboardData()
-  }, [status])
-
-  if (status === 'loading' || loading) {
-    return (
-      <DashboardLayout>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
-          <Spin size="large" tip="Loading dashboard..." />
-        </div>
-      </DashboardLayout>
-    )
-  }
-
-  if (!dashboardData) {
-    return (
-      <DashboardLayout>
-        <div>Failed to load dashboard data</div>
-      </DashboardLayout>
-    )
-  }
-
+  // Since data is loaded statically, no need for loading state or useEffect
   return (
     <>
       <Head>

@@ -44,6 +44,10 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
+.breadcrumb {
+  margin-bottom: 8px;
+}
+
 .trigger {
   padding: 0 24px;
   font-size: 18px;

@@ -1,36 +1,50 @@
-import { useState } from 'react'
-import { Form, Input, Button, Card, Typography, Space, message } from 'antd'
+import { useState, useEffect } from 'react'
+import { Form, Input, Button, Card, Typography, Space, App } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import FullWidthLayout from '@/layouts/FullWidthLayout'
-import { LoginCredentials } from '@/features/login/services/authService'
+import { LoginCredentials, authService } from '@/features/auth/services/authService'
 
 const { Title, Text } = Typography
 
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { notification } = App.useApp()
   
-  const onFinish = async (values: LoginCredentials) => {
-    setLoading(true)
-    
-    const result = await signIn('credentials', {
-      redirect: false,
-      email: values.email,
-      password: values.password,
-    })
-    
-    if (result?.error) {
-      message.error('Invalid email or password')
-    } else {
-      message.success('Login successful')
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (authService.isAuthenticated()) {
       router.push('/dashboard')
     }
-    
-    setLoading(false)
+  }, [router])
+  
+  const onFinish = async (values: LoginCredentials) => {
+    try {
+      setLoading(true)
+      
+      await authService.login(values)
+      
+      notification.success({
+        message: 'Login Successful',
+        description: 'You are now being redirected to the dashboard.'
+      })
+      
+      // Add a slight delay to allow the notification to show
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 500)
+      
+    } catch (error: any) {
+      notification.error({
+        message: 'Login Failed',
+        description: error.message || 'Invalid email or password. Please try again.'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
   
   return (
