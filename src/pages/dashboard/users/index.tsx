@@ -174,7 +174,6 @@ const UsersPage: React.FC = () => {
               <Table<User>
                 dataSource={users} 
                 columns={columns} 
-                key={users.map(user => user.id).toString()}
                 rowKey="id"
                 loading={loading}
                 pagination={{
