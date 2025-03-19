@@ -1,21 +1,30 @@
-import { SessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AppProps } from 'next/app'
-import { ConfigProvider } from 'antd'
+import { ConfigProvider, App as AntApp } from 'antd'
 import antdTheme from '@/styles/antdTheme'
+import { useEffect } from 'react'
+import { authService } from '@/features/auth/services/authService'
 import '@/styles/globals.css'
 
 // Create a client
 const queryClient = new QueryClient()
 
-export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
+export default function App({ Component, pageProps }: AppProps) {
+  // Set up axios interceptors for auth on initial load
+  useEffect(() => {
+    authService.setupAxiosInterceptors()
+  }, [])
+  
   return (
-    <SessionProvider session={session}>
-      <QueryClientProvider client={queryClient}>
-        <ConfigProvider theme={antdTheme}>
+    <QueryClientProvider client={queryClient}>
+      <ConfigProvider 
+        theme={antdTheme}
+        virtual={false} // Prevents the unique key warning in tables
+      >
+        <AntApp>
           <Component {...pageProps} />
-        </ConfigProvider>
-      </QueryClientProvider>
-    </SessionProvider>
+        </AntApp>
+      </ConfigProvider>
+    </QueryClientProvider>
   )
 } 

@@ -16,24 +16,35 @@ const mainMenuItems: MenuItemConfig[] = [
     icon: 'DashboardOutlined',
     label: 'Dashboard',
     path: '/dashboard',
+    permissions: ['admin'], // Only admin can see this
+  },
+  {
+    key: 'products',
+    icon: 'GiftOutlined',
+    label: 'Productos',
+    path: '/dashboard/products',
+    permissions: ['admin'], // Only admin can see this
   },
   {
     key: 'vouchers',
     icon: 'GiftOutlined',
     label: 'Gift Vouchers',
     path: '/dashboard/vouchers',
+    permissions: ['admin'], // Only admin can see this
   },
   {
     key: 'orders',
     icon: 'ShoppingCartOutlined',
     label: 'Orders',
     path: '/dashboard/orders',
+    permissions: ['admin'], // Only admin can see this
   },
   {
     key: 'stores',
     icon: 'ShopOutlined',
     label: 'Stores',
     path: '/dashboard/stores',
+    permissions: ['admin'], // Only admin can see this
   },
   {
     key: 'users',

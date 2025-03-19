@@ -1,5 +1,6 @@
-import { Typography } from 'antd'
+import { Space, Typography } from 'antd'
 import Head from 'next/head'
+import Link from 'next/link'
 
 const { Title } = Typography
 
@@ -15,6 +16,11 @@ export default function Home() {
       <main>
         <Title>Welcome to Gifty</Title>
         <Title level={2}>Your Gift Vouchers Platform</Title>
+        <Space>
+        <Link href="/auth/login">Login</Link>
+        <Link href="/auth/register">Register</Link>
+        <Link href="/dashboard">Dashboard</Link>
+      </Space>
       </main>
     </>
   )
