@@ -41,8 +41,8 @@ const RequireAuth = ({ children, allowedRoles }: RequireAuthProps) => {
     
     // Check role-based access if needed
     if (allowedRoles && allowedRoles.length > 0) {
-      const userRole = session.user.role
-      if (!allowedRoles.includes(userRole)) {
+      const userRole = session.user?.role
+      if (!userRole || !allowedRoles.includes(userRole)) {
         router.push('/dashboard')
         return
       }
