@@ -1,0 +1,61 @@
+{
+  "name": "gifty",
+  "version": "1.0.0",
+  "description": "Gift Vouchers Platform - A white-label solution for businesses to create, sell, and manage gift vouchers",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "format": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ximepaparella/gifty.git"
+  },
+  "keywords": [
+    "gift-vouchers",
+    "nextjs",
+    "antd",
+    "react",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ximepaparella/gifty/issues"
+  },
+  "homepage": "https://github.com/ximepaparella/gifty#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@ant-design/charts": "^2.2.7",
+    "@mercadopago/sdk-react": "^0.0.17",
+    "@tanstack/react-query": "^5.24.1",
+    "antd": "^5.14.2",
+    "axios": "^1.6.7",
+    "date-fns": "^3.3.1",
+    "next": "^13.5.6",
+    "next-auth": "^4.24.6",
+    "nodemailer": "^6.9.10",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  }
+}

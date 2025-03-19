@@ -1,0 +1,86 @@
+.layout {
+  height: 100vh;
+}
+
+.sider {
+  position: fixed;
+  left: 0;
+  height: 100vh;
+  z-index: 10;
+  overflow: auto;
+}
+
+.logo {
+  height: 64px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.logoText {
+  color: white !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+.logoIcon {
+  font-size: 24px;
+  color: white;
+}
+
+.header {
+  padding: 0;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.trigger {
+  padding: 0 24px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.trigger:hover {
+  color: #7367F0;
+}
+
+.headerRight {
+  padding-right: 24px;
+}
+
+.userInfo {
+  cursor: pointer;
+}
+
+.userName {
+  margin-left: 8px;
+}
+
+.content {
+  margin: 24px 16px;
+  padding: 24px;
+  min-height: 280px;
+  border-radius: 4px;
+  overflow: auto;
+  transition: all 0.2s;
+  height: 100vh;
+}
+
+:global(.ant-layout-sider-collapsed) + div .content {
+  margin-left: 80px;
+}
+
+.pageTitle {
+  margin-bottom: 24px !important;
+} 
