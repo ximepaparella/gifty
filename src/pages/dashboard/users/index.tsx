@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Table, Space, Button, Popconfirm, Card, Row, Col, Input, Tag, Breadcrumb } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/router'
@@ -26,6 +26,11 @@ const UsersPage: React.FC = () => {
     handleTableChange 
   } = useUsers()
 
+  // Debug users data in component
+  useEffect(() => {
+    console.log("Users data in component:", users);
+    console.log("User count:", users?.length);
+  }, [users]);
 
   // Get all unique roles from user data for dynamic filtering
   const getRoleFilters = () => {

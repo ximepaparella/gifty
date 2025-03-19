@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Table, Space, Button, Popconfirm, Card, Row, Col, Input, Tag, Tooltip } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/router'
@@ -19,6 +19,12 @@ const StoresPage: React.FC = () => {
     handleDeleteStore, 
     handleTableChange 
   } = useStores()
+  
+  // Debug stores data in component
+  useEffect(() => {
+    console.log("Stores data in component:", stores);
+    console.log("Store count:", stores?.length);
+  }, [stores]);
   
   // Use the hook to resolve owner information
   const { getOwnerById, isLoading: loadingOwners } = useStoreOwners()

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { App } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -51,6 +51,13 @@ export const useUsers = () => {
     retry: false,
     staleTime: 60000, // 1 minute
   })
+  
+  // Debug logging for users data
+  useEffect(() => {
+    console.log("Users data from useQuery:", usersData);
+    console.log("Users array:", usersData?.data);
+    console.log("Pagination:", usersData?.pagination);
+  }, [usersData]);
   
   // Get a single user by id
   const fetchUserById = useCallback(async (id: string) => {

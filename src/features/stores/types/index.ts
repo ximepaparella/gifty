@@ -1,5 +1,6 @@
 export interface Store {
-  _id: string
+  _id?: string  // MongoDB format
+  id?: string   // API response format
   name: string
   ownerId: string
   email: string

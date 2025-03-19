@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { App } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -49,6 +49,13 @@ export const useStores = () => {
     retry: false,
     staleTime: 60000, // 1 minute
   })
+  
+  // Debug logging for stores data
+  useEffect(() => {
+    console.log("Stores data from useQuery:", storesData);
+    console.log("Stores array:", storesData?.data);
+    console.log("Pagination:", storesData?.pagination);
+  }, [storesData]);
   
   // Get a single store by id
   const fetchStoreById = useCallback(async (id: string) => {
