@@ -200,7 +200,12 @@ const VouchersPage: React.FC = () => {
             dataSource={vouchers}
             rowKey={record => {
               const id = record._id || record.id;
-              return id ? id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`;
+              if (!id) {
+                console.warn('Voucher without ID found:', record);
+                // Use a more stable identifier if possible, like a combination of other fields
+                return `${record.code}-${record.createdAt}`;
+              }
+              return id.toString();
             }}
             pagination={{
               current: pagination.current,
