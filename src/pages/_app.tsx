@@ -4,6 +4,8 @@ import { ConfigProvider, App as AntApp } from 'antd'
 import antdTheme from '@/styles/antdTheme'
 import { useEffect } from 'react'
 import { authService } from '@/features/auth/services/authService'
+// Import the dayjs configuration
+import '@/utils/dayjs'
 import '@/styles/globals.css'
 
 // Create a client
