@@ -70,7 +70,7 @@ const Template3: React.FC<TemplateProps> = ({
               padding: '10px',
               boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
             }}>
-              <img src={storeLogo || '/placeholder-logo.png'} alt={storeName} style={{
+              <img src={storeLogo || '/placeholder-logo.png'} alt={`${storeName} logo`} style={{
                 maxWidth: '80px',
                 maxHeight: '80px',
               }} />
