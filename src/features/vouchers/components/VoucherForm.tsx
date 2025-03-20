@@ -8,7 +8,7 @@ import {
   DatePicker, 
   Space, 
   Row, 
-  Col, 
+  Col,
 } from 'antd'
 import { useRouter } from 'next/router'
 import { useQuery } from '@tanstack/react-query'
@@ -20,7 +20,14 @@ import { VoucherFormData, Voucher } from '../types'
 import { Store } from '@/features/stores/types'
 import { Product } from '@/features/product/types'
 import { User } from '@/features/users/types'
-import { isBeforeToday } from '@/utils/dateUtils'
+import { 
+  formatDateString, 
+  isValidDate, 
+  isDateInFuture, 
+  getTomorrowDateString, 
+  getThreeMonthsFromNow, 
+  getSixMonthsFromNow 
+} from '@/utils/dateUtils'
 
 const { TextArea } = Input
 
@@ -39,12 +46,6 @@ const TEMPLATE_OPTIONS = [
   { label: 'Template 5', value: 'template5' }
 ]
 
-const validateDate = (date: any): boolean => {
-  if (!date) return false;
-  if (dayjs.isDayjs(date)) return date.isValid();
-  return dayjs(date, 'YYYY-MM-DD').isValid();
-};
-
 const VoucherForm: React.FC<VoucherFormProps> = ({
   initialValues,
   onSubmit,
@@ -53,6 +54,7 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
   const [form] = Form.useForm()
   const router = useRouter()
   const [selectedStoreId, setSelectedStoreId] = useState<string | undefined>(initialValues?.storeId)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   
   // Fetch stores for dropdown
   const { data: storesData, isLoading: loadingStores } = useQuery({
@@ -108,7 +110,21 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
   // Handle store selection change
   const handleStoreChange = (value: string) => {
     setSelectedStoreId(value)
-    form.setFieldsValue({ productId: undefined })
+    form.setFieldsValue({ productId: undefined, amount: undefined })
+    setSelectedProduct(null)
+  }
+  
+  // Handle product selection change
+  const handleProductChange = (value: string) => {
+    const product = products.find((p: Product) => p._id === value || p.id === value)
+    setSelectedProduct(product || null)
+    
+    if (product) {
+      // Set the amount based on the product price
+      form.setFieldsValue({ amount: product.price })
+    } else {
+      form.setFieldsValue({ amount: undefined })
+    }
   }
 
   // Set form values when initialValues change
@@ -118,26 +134,44 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
       setSelectedStoreId(initialValues.storeId);
       
       try {
-        // Parse date in simple format
+        // Find the product to set it as selected
+        if (initialValues.productId && products.length > 0) {
+          const product = products.find(
+            (p: Product) => p._id === initialValues.productId || p.id === initialValues.productId
+          )
+          setSelectedProduct(product || null)
+        }
+        
+        // Create a new object with values properly formatted for the form
         const formattedValues = {
           ...initialValues,
-          expirationDate: initialValues.expirationDate ? dayjs(initialValues.expirationDate) : undefined
+          // Ensure date is in correct format for HTML date input (YYYY-MM-DD)
+          expirationDate: initialValues.expirationDate ? 
+            formatDateString(new Date(initialValues.expirationDate)) : 
+            getThreeMonthsFromNow()
         };
         
-        console.log("Formatted values:", formattedValues);
+        console.log("Formatted values for form:", formattedValues);
         form.setFieldsValue(formattedValues);
       } catch (error) {
         console.error("Error setting form values:", error);
       }
+    } else {
+      // For new vouchers, set default expiration date to 3 months from now
+      form.setFieldsValue({ 
+        expirationDate: getThreeMonthsFromNow() 
+      });
     }
-  }, [initialValues, form]);
+  }, [initialValues, form, products]);
 
   const handleFinish = (values: any) => {
     console.log("Form values on submit:", values);
     
+    // All values are already in the correct format
     const formattedValues: VoucherFormData = {
       ...values,
-      expirationDate: values.expirationDate ? values.expirationDate.format('YYYY-MM-DD') : undefined
+      // Ensure the date is in the format expected by the API
+      expirationDate: values.expirationDate ? formatDateString(new Date(values.expirationDate)) : undefined
     };
     
     console.log("Formatted values for submission:", formattedValues);
@@ -155,6 +189,7 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
       onFinish={handleFinish}
       initialValues={{
         template: 'template1',
+        expirationDate: getThreeMonthsFromNow(),
         ...initialValues
       }}
     >
@@ -190,6 +225,7 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
               loading={loadingProducts}
               disabled={!selectedStoreId}
               showSearch
+              onChange={handleProductChange}
               filterOption={(input, option) =>
                 (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
               }
@@ -222,16 +258,16 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
             name="amount"
             label="Amount"
             rules={[
-              { required: true, message: 'Please enter the voucher amount' },
-              { type: 'number', min: 0, message: 'Amount must be a positive number' }
+              { required: true, message: 'Please select a product to set amount' }
             ]}
           >
             <InputNumber 
               style={{ width: '100%' }}
-              placeholder="Enter amount"
+              placeholder="Amount is based on product price"
               prefix="$"
               precision={2}
               min={0}
+              disabled={true}
             />
           </Form.Item>
         </Col>
@@ -242,14 +278,27 @@ const VoucherForm: React.FC<VoucherFormProps> = ({
           <Form.Item
             name="expirationDate"
             label="Expiration Date"
-            rules={[{ required: true, message: 'Please select an expiration date' }]}
+            rules={[
+              { required: true, message: 'Please select an expiration date' },
+              {
+                validator: (_, value) => {
+                  if (!value) {
+                    return Promise.reject('Please select an expiration date');
+                  }
+                  if (!isDateInFuture(value)) {
+                    return Promise.reject('Expiration date must be in the future');
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
           >
-            <DatePicker 
+            <Input 
+              type="date"
               style={{ width: '100%' }} 
-              format="YYYY-MM-DD"
-              disabledDate={isBeforeToday}
-              allowClear={false}
-              getPopupContainer={(trigger) => trigger.parentElement || document.body}
+              min={getTomorrowDateString()}
+              max={getSixMonthsFromNow()}
+              defaultValue={getThreeMonthsFromNow()}
             />
           </Form.Item>
         </Col>
