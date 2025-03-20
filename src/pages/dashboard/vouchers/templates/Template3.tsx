@@ -1,10 +1,10 @@
 import React from 'react';
 
 interface TemplateProps {
-  sender_name: string;
-  sender_email: string;
-  receiver_name: string;
-  receiver_email: string;
+  senderName: string;
+  senderEmail: string;
+  receiverName: string;
+  receiverEmail: string;
   message: string;
   productName: string;
   storeName: string;
@@ -19,10 +19,10 @@ interface TemplateProps {
 }
 
 const Template3: React.FC<TemplateProps> = ({
-  sender_name,
-  sender_email,
-  receiver_name,
-  receiver_email,
+  senderName,
+  senderEmail,
+  receiverName,
+  receiverEmail,
   message,
   productName,
   storeName,
@@ -106,7 +106,7 @@ const Template3: React.FC<TemplateProps> = ({
                 <div style={{
                   fontSize: '18px',
                   fontWeight: 500,
-                }}>{sender_name}</div>
+                }}>{senderName}</div>
               </div>
               
               <div style={{ marginBottom: '20px' }}>
@@ -120,7 +120,7 @@ const Template3: React.FC<TemplateProps> = ({
                 <div style={{
                   fontSize: '18px',
                   fontWeight: 500,
-                }}>{receiver_name}</div>
+                }}>{receiverName}</div>
               </div>
               
               <div style={{ marginBottom: '20px' }}>

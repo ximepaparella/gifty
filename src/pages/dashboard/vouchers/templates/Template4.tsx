@@ -1,10 +1,10 @@
 import React from 'react';
 
 interface TemplateProps {
-  sender_name: string;
-  sender_email: string;
-  receiver_name: string;
-  receiver_email: string;
+  senderName: string;
+  senderEmail: string;
+  receiverName: string;
+  receiverEmail: string;
   message: string;
   productName: string;
   storeName: string;
@@ -19,10 +19,10 @@ interface TemplateProps {
 }
 
 const Template4: React.FC<TemplateProps> = ({
-  sender_name,
-  sender_email,
-  receiver_name,
-  receiver_email,
+  senderName,
+  senderEmail,
+  receiverName,
+  receiverEmail,
   message,
   productName,
   storeName,
@@ -147,11 +147,10 @@ const Template4: React.FC<TemplateProps> = ({
                     fontStyle: 'italic',
                   }}>From</div>
                   <div style={{
-                    fontSize: '18px',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
                     color: '#333',
-                    borderBottom: '1px dotted #d4af37',
-                    paddingBottom: '5px',
-                  }}>{sender_name}</div>
+                  }}>{senderName}</div>
                 </div>
                 
                 <div style={{ marginBottom: '15px' }}>
@@ -179,11 +178,10 @@ const Template4: React.FC<TemplateProps> = ({
                     fontStyle: 'italic',
                   }}>To</div>
                   <div style={{
-                    fontSize: '18px',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
                     color: '#333',
-                    borderBottom: '1px dotted #d4af37',
-                    paddingBottom: '5px',
-                  }}>{receiver_name}</div>
+                  }}>{receiverName}</div>
                 </div>
                 
                 <div style={{ marginBottom: '15px' }}>

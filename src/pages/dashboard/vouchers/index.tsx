@@ -15,7 +15,8 @@ const VouchersPage: React.FC = () => {
     vouchers, 
     loading, 
     pagination, 
-    handleTableChange 
+    handleTableChange,
+    handleDeleteVoucher
   } = useVouchers()
   
   // Debug vouchers data in component
@@ -78,16 +79,10 @@ const VouchersPage: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       sorter: true,
-{
-  title: 'Amount',
-  dataIndex: 'amount',
-  key: 'amount',
-  sorter: true,
-  render: (amount: number | null | undefined) => {
-    if (amount === null || amount === undefined) return '$0.00';
-    return `$${amount.toFixed(2)}`;
-  }
-}
+      render: (amount: number | null | undefined) => {
+        if (amount === null || amount === undefined) return '$0.00';
+        return `$${amount.toFixed(2)}`;
+      }
     },
     {
       title: 'Status',

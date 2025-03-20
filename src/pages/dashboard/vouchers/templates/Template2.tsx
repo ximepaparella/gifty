@@ -1,10 +1,10 @@
 import React from 'react';
 
 interface TemplateProps {
-  sender_name: string;
-  sender_email: string;
-  receiver_name: string;
-  receiver_email: string;
+  senderName: string;
+  senderEmail: string;
+  receiverName: string;
+  receiverEmail: string;
   message: string;
   productName: string;
   storeName: string;
@@ -19,10 +19,10 @@ interface TemplateProps {
 }
 
 const Template2: React.FC<TemplateProps> = ({
-  sender_name,
-  sender_email,
-  receiver_name,
-  receiver_email,
+  senderName,
+  senderEmail,
+  receiverName,
+  receiverEmail,
   message,
   productName,
   storeName,
@@ -72,31 +72,13 @@ const Template2: React.FC<TemplateProps> = ({
               padding: '25px',
             }}>
               <div style={{ marginBottom: '20px' }}>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  marginBottom: '5px',
-                }}>From</div>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: 500,
-                }}>{sender_name}</div>
+                <div style={{ fontSize: '12px', color: '#333', marginBottom: '5px' }}>From</div>
+                <div style={{ fontSize: '16px', marginBottom: '15px' }}>{senderName}</div>
               </div>
               
               <div style={{ marginBottom: '20px' }}>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#666',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  marginBottom: '5px',
-                }}>To</div>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: 500,
-                }}>{receiver_name}</div>
+                <div style={{ fontSize: '12px', color: '#333', marginBottom: '5px' }}>To</div>
+                <div style={{ fontSize: '16px', marginBottom: '15px' }}>{receiverName}</div>
               </div>
               
               <div style={{ marginBottom: '20px' }}>
