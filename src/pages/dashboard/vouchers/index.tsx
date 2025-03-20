@@ -15,7 +15,6 @@ const VouchersPage: React.FC = () => {
     vouchers, 
     loading, 
     pagination, 
-    handleDeleteVoucher, 
     handleTableChange 
   } = useVouchers()
   
