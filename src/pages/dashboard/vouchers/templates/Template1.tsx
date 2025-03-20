@@ -82,15 +82,15 @@ const Template1: React.FC<TemplateProps> = ({
             color: '#fff',
           }}>
             <div>
-              <div style={{ fontSize: '12px', color: '#777', marginBottom: '5px' }}>FROM:</div>
+              <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '5px' }}>FROM:</div>
               <div style={{ fontSize: '16px', marginBottom: '15px' }}>{sender_name}</div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', color: '#777', marginBottom: '5px' }}>TO:</div>
+              <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '5px' }}>TO:</div>
               <div style={{ fontSize: '16px', marginBottom: '15px' }}>{receiver_name}</div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', color: '#777', marginBottom: '5px' }}>PRODUCT:</div>
+              <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '5px' }}>PRODUCT:</div>
               <div style={{ fontSize: '16px', marginBottom: '15px' }}>{productName}</div>
             </div>
             
