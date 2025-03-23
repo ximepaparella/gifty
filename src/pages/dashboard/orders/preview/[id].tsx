@@ -51,7 +51,7 @@ const PreviewOrderPage: React.FC = () => {
   
   // Fetch product and store data when order is loaded
   useEffect(() => {
-    if (selectedOrder && selectedOrder.voucher) {
+    if (selectedOrder?.voucher) {
       console.log('Order loaded, fetching related data');
       
       // Fetch product data if available

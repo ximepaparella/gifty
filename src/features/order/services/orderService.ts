@@ -32,21 +32,27 @@ const getApiConfig = () => {
 };
 
 /**
- * Get all orders with pagination
+ * Shared helper function to handle different kinds of paginated order queries
+ * @param endpoint The API endpoint to query
+ * @param page Current page number
+ * @param limit Items per page
+ * @param sort Optional sort parameter
+ * @returns Paginated orders response
  */
-export const getOrders = async (
+const getPaginatedOrders = async (
+  endpoint: string,
   page: number = 1,
   limit: number = 10,
   sort?: string
 ): Promise<PaginatedOrdersResponse> => {
   try {
     const config = getApiConfig();
-    const response = await axios.get(
-      `/orders?page=${page}&limit=${limit}${sort ? `&sort=${sort}` : ''}`,
-      config
-    );
+    const url = `${endpoint}${endpoint.includes('?') ? '&' : '?'}page=${page}&limit=${limit}${sort ? `&sort=${sort}` : ''}`;
     
-    console.log("API Orders response:", response.data);
+    console.log(`API request to: ${url}`);
+    const response = await axios.get(url, config);
+    
+    console.log("API Paginated Orders response:", response.data);
     
     // Handle various response formats
     if (response.data) {
@@ -97,9 +103,20 @@ export const getOrders = async (
     
     throw new Error('Invalid API response format: No data received');
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error(`Error fetching orders from ${endpoint}:`, error);
     throw error;
   }
+};
+
+/**
+ * Get all orders with pagination
+ */
+export const getOrders = async (
+  page: number = 1,
+  limit: number = 10,
+  sort?: string
+): Promise<PaginatedOrdersResponse> => {
+  return getPaginatedOrders(`/orders`, page, limit, sort);
 };
 
 /**
@@ -182,69 +199,10 @@ export const getOrderByVoucherCode = async (code: string): Promise<Order> => {
 export const getOrdersByCustomerId = async (
   customerId: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sort?: string
 ): Promise<PaginatedOrdersResponse> => {
-  try {
-    const config = getApiConfig();
-    const response = await axios.get(
-      `/orders/customer/${customerId}?page=${page}&limit=${limit}`,
-      config
-    );
-    
-    console.log("API Customer Orders response:", response.data);
-    
-    // Handle various response formats
-    if (response.data) {
-      // Case 1: Format is { status, data, pagination }
-      if (response.data.status === 'success' && 
-          Array.isArray(response.data.data) && 
-          response.data.pagination) {
-        return {
-          data: response.data.data,
-          pagination: response.data.pagination,
-        };
-      }
-      
-      // Case 2: Format is { data, pagination } directly
-      if (Array.isArray(response.data.data) && response.data.pagination) {
-        return {
-          data: response.data.data,
-          pagination: response.data.pagination,
-        };
-      }
-      
-      // Case 3: Response is the array directly
-      if (Array.isArray(response.data)) {
-        return {
-          data: response.data,
-          pagination: {
-            page: page,
-            limit: limit,
-            total: response.data.length,
-            pages: Math.ceil(response.data.length / limit)
-          }
-        };
-      }
-      
-      // Case 4: Format is unexpected but we can try to extract data
-      console.warn('Unexpected API response format, attempting to extract data:', response.data);
-      return {
-        data: Array.isArray(response.data.data) ? response.data.data : 
-              Array.isArray(response.data) ? response.data : [],
-        pagination: response.data.pagination || {
-          page: page,
-          limit: limit,
-          total: 0,
-          pages: 0
-        }
-      };
-    }
-    
-    throw new Error('Invalid API response format: No data received');
-  } catch (error) {
-    console.error(`Error fetching orders for customer ${customerId}:`, error);
-    throw error;
-  }
+  return getPaginatedOrders(`/orders/customer/${customerId}`, page, limit, sort);
 };
 
 /**
@@ -253,69 +211,10 @@ export const getOrdersByCustomerId = async (
 export const getOrdersByStoreId = async (
   storeId: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sort?: string
 ): Promise<PaginatedOrdersResponse> => {
-  try {
-    const config = getApiConfig();
-    const response = await axios.get(
-      `/orders/store/${storeId}?page=${page}&limit=${limit}`,
-      config
-    );
-    
-    console.log("API Store Orders response:", response.data);
-    
-    // Handle various response formats
-    if (response.data) {
-      // Case 1: Format is { status, data, pagination }
-      if (response.data.status === 'success' && 
-          Array.isArray(response.data.data) && 
-          response.data.pagination) {
-        return {
-          data: response.data.data,
-          pagination: response.data.pagination,
-        };
-      }
-      
-      // Case 2: Format is { data, pagination } directly
-      if (Array.isArray(response.data.data) && response.data.pagination) {
-        return {
-          data: response.data.data,
-          pagination: response.data.pagination,
-        };
-      }
-      
-      // Case 3: Response is the array directly
-      if (Array.isArray(response.data)) {
-        return {
-          data: response.data,
-          pagination: {
-            page: page,
-            limit: limit,
-            total: response.data.length,
-            pages: Math.ceil(response.data.length / limit)
-          }
-        };
-      }
-      
-      // Case 4: Format is unexpected but we can try to extract data
-      console.warn('Unexpected API response format, attempting to extract data:', response.data);
-      return {
-        data: Array.isArray(response.data.data) ? response.data.data : 
-              Array.isArray(response.data) ? response.data : [],
-        pagination: response.data.pagination || {
-          page: page,
-          limit: limit,
-          total: 0,
-          pages: 0
-        }
-      };
-    }
-    
-    throw new Error('Invalid API response format: No data received');
-  } catch (error) {
-    console.error(`Error fetching orders for store ${storeId}:`, error);
-    throw error;
-  }
+  return getPaginatedOrders(`/orders/store/${storeId}`, page, limit, sort);
 };
 
 /**
