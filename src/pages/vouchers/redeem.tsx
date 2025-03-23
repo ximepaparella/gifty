@@ -61,6 +61,8 @@ const PublicVoucherRedemptionPage = () => {
       setSubmitting(false);
     } catch (error) {
       setSubmitting(false);
+      setError(error as Error);
+      console.error('Error redeeming voucher:', error);
     }
   };
 
