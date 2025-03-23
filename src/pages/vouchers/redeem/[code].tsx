@@ -49,7 +49,6 @@ const VoucherRedeemPage: NextPage = () => {
     if (router.isReady) {
       fetchVoucher();
     }
-  }, []);
   }, [code, router.isReady, getVoucherByCode]);
 
   const handleRedeemVoucher = async () => {
