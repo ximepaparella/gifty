@@ -18,6 +18,15 @@ const VOUCHERS_QUERY_KEY = 'vouchers'
 const VOUCHER_DETAIL_QUERY_KEY = 'voucher-detail'
 const VOUCHER_BY_CODE_KEY = 'voucher-by-code'
 
+// Define state interface
+interface VoucherState {
+  selectedVoucher: Voucher | null;
+  currentVoucher: Voucher | null; // For redemption flow
+  loading: boolean;
+  submitting: boolean;
+  error: string | null; // For tracking errors in redemption flow
+}
+
 export const useVouchers = () => {
   const { notification } = App.useApp();
   const router = useRouter()
@@ -29,7 +38,7 @@ export const useVouchers = () => {
     sort: ''
   })
   
-  const [state, setState] = useState<any>({
+  const [state, setState] = useState<VoucherState>({
     selectedVoucher: null,
     currentVoucher: null, // For redemption flow
     loading: false,
@@ -66,85 +75,99 @@ export const useVouchers = () => {
   // Fetch voucher by ID
   const fetchVoucherById = useCallback(async (id: string) => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
+      setState((prev: VoucherState) => ({ ...prev, loading: true, error: null }));
       const voucher = await getVoucherById(id);
-      setState(prev => ({ ...prev, selectedVoucher: voucher, loading: false }));
+      setState((prev: VoucherState) => ({ ...prev, selectedVoucher: voucher, loading: false }));
       return voucher;
-    } catch (error: any) {
-      notification.error({
-        message: 'Error fetching voucher',
-        description: error.message
-      });
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
-      throw error;
+    } catch (error) {
+      console.error('Error fetching voucher by ID:', error);
+      setState((prev: VoucherState) => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Failed to fetch voucher', 
+        loading: false 
+      }));
+      return null;
     }
-  }, [notification]);
+  }, []);
 
   // Fetch voucher by code (for redemption)
-  const getVoucherByCodeFn = useCallback(async (code: string) => {
+  const fetchVoucherByCode = useCallback(async (code: string) => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
+      setState((prev: VoucherState) => ({ ...prev, loading: true, error: null }));
       const voucher = await getVoucherByCode(code);
-      setState(prev => ({ ...prev, currentVoucher: voucher, loading: false }));
+      setState((prev: VoucherState) => ({ ...prev, currentVoucher: voucher, loading: false }));
       return voucher;
-    } catch (error: any) {
-      notification.error({
-        message: 'Error fetching voucher by code',
-        description: error.message
-      });
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
-      throw error;
+    } catch (error) {
+      console.error('Error fetching voucher by code:', error);
+      setState((prev: VoucherState) => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Failed to fetch voucher', 
+        loading: false 
+      }));
+      return null;
     }
-  }, [notification]);
+  }, []);
 
   // Redeem voucher
   const redeemVoucherFn = useCallback(async (code: string) => {
     try {
-      setState(prev => ({ ...prev, submitting: true, error: null }));
-      const result = await redeemVoucherAPI(code);
+      setState((prev: VoucherState) => ({ ...prev, submitting: true, error: null }));
+      const success = await redeemVoucherAPI(code);
       
-      // Update the current voucher with the redeemed status
-      if (result && state.currentVoucher) {
-        setState(prev => ({ 
+      // Only update if redemption was successful and we have the current voucher
+      if (success && state.currentVoucher) {
+        const updatedVoucher = {
+          ...state.currentVoucher,
+          status: 'redeemed' as 'redeemed',
+          isRedeemed: true,
+          redeemedAt: new Date().toISOString()
+        };
+        
+        setState((prev: VoucherState) => ({ 
           ...prev, 
-          currentVoucher: { 
-            ...prev.currentVoucher, 
-            status: 'redeemed',
-            isRedeemed: true,
-            redeemedAt: new Date().toISOString()
-          }, 
+          currentVoucher: updatedVoucher, 
           submitting: false 
         }));
+        
+        // Invalidate queries to refetch data
+        queryClient.invalidateQueries({ queryKey: [VOUCHERS_QUERY_KEY] });
+        if (state.currentVoucher.id) {
+          queryClient.invalidateQueries({ 
+            queryKey: [VOUCHER_DETAIL_QUERY_KEY, state.currentVoucher.id] 
+          });
+        }
+        queryClient.invalidateQueries({ 
+          queryKey: [VOUCHER_BY_CODE_KEY, code]
+        });
+        
+        return updatedVoucher;
       }
       
-      notification.success({
-        message: 'Success',
-        description: 'Voucher redeemed successfully'
-      });
-      
-      return result;
-    } catch (error: any) {
-      notification.error({
-        message: 'Error redeeming voucher',
-        description: error.message
-      });
-      setState(prev => ({ ...prev, submitting: false, error: error.message }));
-      throw error;
+      setState((prev: VoucherState) => ({ ...prev, submitting: false }));
+      return state.currentVoucher;
+    } catch (error) {
+      console.error('Error redeeming voucher:', error);
+      setState((prev: VoucherState) => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Failed to redeem voucher', 
+        submitting: false 
+      }));
+      return null;
     }
-  }, [notification, state.currentVoucher]);
+  }, [queryClient, state.currentVoucher]);
 
   // Create voucher mutation
   const createVoucherMutation = useMutation({
     mutationFn: (voucherData: VoucherFormData) => createVoucher(voucherData),
     onMutate: () => {
-      setState(prev => ({ ...prev, submitting: true }))
+      setState((prev: VoucherState) => ({ ...prev, submitting: true }))
     },
     onSuccess: () => {
       notification.success({
         message: 'Success',
         description: 'Voucher created successfully'
       })
-      setState(prev => ({ ...prev, submitting: false }))
+      setState((prev: VoucherState) => ({ ...prev, submitting: false }))
       router.push('/dashboard/vouchers')
       return queryClient.invalidateQueries({ queryKey: [VOUCHERS_QUERY_KEY] })
     },
@@ -153,7 +176,7 @@ export const useVouchers = () => {
         message: 'Error creating voucher',
         description: error.message
       })
-      setState(prev => ({ ...prev, submitting: false }))
+      setState((prev: VoucherState) => ({ ...prev, submitting: false }))
     }
   })
 
@@ -162,14 +185,14 @@ export const useVouchers = () => {
     mutationFn: ({ id, voucherData }: { id: string; voucherData: VoucherFormData }) => 
       updateVoucher(id, voucherData),
     onMutate: () => {
-      setState(prev => ({ ...prev, submitting: true }))
+      setState((prev: VoucherState) => ({ ...prev, submitting: true }))
     },
     onSuccess: () => {
       notification.success({
         message: 'Success',
         description: 'Voucher updated successfully'
       })
-      setState(prev => ({ ...prev, submitting: false }))
+      setState((prev: VoucherState) => ({ ...prev, submitting: false }))
       router.push('/dashboard/vouchers')
       return queryClient.invalidateQueries({ queryKey: [VOUCHERS_QUERY_KEY] })
     },
@@ -178,7 +201,7 @@ export const useVouchers = () => {
         message: 'Error updating voucher',
         description: error.message
       })
-      setState(prev => ({ ...prev, submitting: false }))
+      setState((prev: VoucherState) => ({ ...prev, submitting: false }))
     }
   })
 
@@ -241,7 +264,7 @@ export const useVouchers = () => {
       total: vouchersData?.pagination?.total || 0
     },
     fetchVoucherById,
-    getVoucherByCode: getVoucherByCodeFn,
+    getVoucherByCode: fetchVoucherByCode,
     redeemVoucher: redeemVoucherFn,
     handleCreateVoucher,
     handleUpdateVoucher,

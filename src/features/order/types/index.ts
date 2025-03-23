@@ -57,6 +57,7 @@ export interface OrderFormData {
     receiverEmail: string;
     message: string;
     template: string;
+    code: string;
   };
 }
 

@@ -7,6 +7,8 @@ import { authService } from '@/features/auth/services/authService'
 // Import the dayjs configuration
 import '@/utils/dayjs'
 import '@/styles/globals.css'
+// Import Tailwind CSS for client pages
+import '@/styles/tailwind.css'
 
 // Create a client
 const queryClient = new QueryClient()

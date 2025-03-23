@@ -341,19 +341,15 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialValues, onSubmit, loading 
   }, [initialValues, form]);
 
   const handleFinish = (values: any) => {
-    console.log('Form values:', values);
-    
     // Format the order data for submission
     const orderData: OrderFormData = {
-      customer: {
-        id: values.customer
-      },
-      payment: {
+      customerId: values.customer,
+      paymentDetails: {
         paymentId: values.paymentId,
-        status: values.status,
-        provider: values.provider,
+        paymentStatus: values.status,
+        paymentEmail: values.paymentEmail,
         amount: parseFloat(values.amount),
-        email: values.paymentEmail
+        provider: values.provider
       },
       voucher: {
         storeId: values.store,

@@ -1,27 +1,21 @@
-import { Space, Typography } from 'antd'
-import Head from 'next/head'
-import Link from 'next/link'
+import React from 'react';
+import ClientLayout from '@/layouts/ClientLayout';
 
-const { Title } = Typography
-
-export default function Home() {
+const Index = () => {
   return (
-    <>
-      <Head>
-        <title>Gifty - Gift Vouchers Platform</title>
-        <meta name="description" content="Create, sell, and manage gift vouchers for your business" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <main>
-        <Title>Welcome to Gifty</Title>
-        <Title level={2}>Your Gift Vouchers Platform</Title>
-        <Space>
-        <Link href="/auth/login">Login</Link>
-        <Link href="/auth/register">Register</Link>
-        <Link href="/dashboard">Dashboard</Link>
-      </Space>
-      </main>
-    </>
-  )
-} 
+    <ClientLayout
+      title="Gifty - Gift Experiences That Create Lasting Memories"
+      description="Discover, purchase, and gift unique experiences to your loved ones with Gifty. From spa days to cooking classes, find the perfect gift for any occasion."
+      transparentHeader={true}
+    >
+      <div className="container mx-auto py-20">
+        <h1 className="text-4xl font-bold text-center">Welcome to Gifty!</h1>
+        <p className="text-xl text-center mt-4">
+          The perfect platform for gifting unique experiences.
+        </p>
+      </div>
+    </ClientLayout>
+  );
+};
+
+export default Index;

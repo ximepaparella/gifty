@@ -1,0 +1,183 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 280 50% 97%;
+    --foreground: 278 60% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 278 60% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 278 60% 15%;
+
+    --primary: 275 100% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 276 100% 95%;
+    --secondary-foreground: 275 80% 40%;
+
+    --muted: 276 30% 90%;
+    --muted-foreground: 275 20% 40%;
+
+    --accent: 276 100% 95%;
+    --accent-foreground: 275 80% 40%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 276 30% 90%;
+    --input: 276 30% 90%;
+    --ring: 275 100% 47%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(171, 56, 255, 0.1) 0%, transparent 25%),
+      radial-gradient(circle at 80% 70%, rgba(138, 43, 226, 0.1) 0%, transparent 30%);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-medium tracking-tight;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply px-4 md:px-8 mx-auto max-w-7xl;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 
+           bg-gifty-500 text-white font-medium transition-all duration-300
+           shadow-md hover:shadow-neon hover:bg-gifty-600 focus:outline-none 
+           focus:ring-2 focus:ring-gifty-300 focus:ring-opacity-50;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 
+           bg-white text-gifty-700 font-medium border border-gifty-200 
+           transition-all duration-300 shadow-sm hover:shadow-md 
+           hover:bg-gifty-50 focus:outline-none focus:ring-2 
+           focus:ring-gifty-300 focus:ring-opacity-50;
+  }
+
+  .transition-custom {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .glass-panel {
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft;
+  }
+  
+  .gradient-card {
+    @apply relative overflow-hidden;
+  }
+  
+  .gradient-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, rgba(193, 104, 255, 0.2), rgba(171, 56, 255, 0.1));
+    border-radius: inherit;
+  }
+}
+
+.section {
+  @apply py-16 md:py-28;
+}
+
+.gift-voucher-card {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.gift-voucher-card::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  background: linear-gradient(45deg, #ab38ff, #c168ff, #ab38ff);
+  border-radius: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gift-voucher-card:hover::before {
+  opacity: 1;
+}
+
+/* Animation delays */
+.delay-0 {
+  animation-delay: 0ms;
+}
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-400 {
+  animation-delay: 400ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+/* New Disruptive Elements */
+.blob-bg {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: -1;
+  opacity: 0.4;
+}
+
+.text-gradient {
+  @apply bg-gradient-to-r from-gifty-600 to-gifty-400 bg-clip-text text-transparent;
+}
+
+.card-highlight {
+  @apply border-2 border-gifty-300 shadow-neon;
+}
+
+.card-highlight-strong {
+  @apply border-2 border-gifty-400 shadow-neon-strong;
+}
+
+.image-tilt {
+  @apply transition-transform duration-500;
+  transform-style: preserve-3d;
+}
+
+.image-tilt:hover {
+  transform: perspective(1000px) rotateY(5deg) rotateX(2deg);
+}
