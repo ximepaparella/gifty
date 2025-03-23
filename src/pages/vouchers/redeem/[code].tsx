@@ -49,7 +49,6 @@ const VoucherRedeemPage: NextPage = () => {
     if (router.isReady) {
       fetchVoucher();
     }
-  }, []);
   }, [code, router.isReady, getVoucherByCode]);
 
   const handleRedeemVoucher = async () => {
@@ -74,11 +73,23 @@ const VoucherRedeemPage: NextPage = () => {
         setRedeemMessage('Failed to redeem voucher. It may have already been redeemed or expired.');
         setDebugInfo(prev => `${prev}\nFailed to redeem voucher`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error redeeming voucher:', error);
       setRedeemStatus('error');
-      setRedeemMessage(error.response?.data?.message || 'An error occurred while redeeming the voucher');
-      setDebugInfo(prev => `${prev}\nError in handleRedeemVoucher: ${error.message}`);
+      // Type guard for better error handling
+      if (error instanceof Error) {
+        setRedeemMessage(
+          error.message || 'An error occurred while redeeming the voucher'
+        );
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        // Handle axios error
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        setRedeemMessage(
+          axiosError.response?.data?.message || 'An error occurred while redeeming the voucher'
+        );
+      } else {
+        setRedeemMessage('An unexpected error occurred');
+      }
     }
   };
 
