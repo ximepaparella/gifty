@@ -97,13 +97,39 @@ export const getVoucherById = async (id: string): Promise<Voucher> => {
 // Get voucher by code
 export const getVoucherByCode = async (code: string): Promise<Voucher> => {
   try {
+    console.log(`Fetching voucher with code: ${code}`);
+    
+    // Log the complete API URL being called
     const config = getApiConfig();
-    const response = await axios.get(`/vouchers/code/${code}`, config);
+    
+    // Fixed API URL - don't include /api/v1 since it's already in the baseURL
+    const apiUrl = `/vouchers/code/${code}/redeem`;
+    console.log(`API URL being called: ${config.baseURL}${apiUrl}`);
+    
+    // Make the API call with proper error handling
+    const response = await axios.get(apiUrl, config);
+    
+    // Log the response data structure to debug
+    console.log('API response for voucher code:', {
+      status: response.status,
+      statusText: response.statusText,
+      hasData: !!response.data,
+      dataStructure: response.data ? Object.keys(response.data) : 'No data',
+      data: response.data
+    });
     
     return extractApiResponse<Voucher>(response);
   } catch (error: any) {
     console.error('Error fetching voucher by code:', error);
-    throw new Error(error.response?.data?.message || 'Failed to fetch voucher');
+    
+    // Enhanced error logging
+    if (error.response) {
+      console.error('Error response status:', error.response.status);
+      console.error('Error response data:', error.response.data);
+    }
+    
+    // Provide a more specific error message
+    throw new Error(error.response?.data?.message || `Failed to fetch voucher with code ${code}`);
   }
 };
 
@@ -171,14 +197,35 @@ export const deleteVoucher = async (id: string): Promise<void> => {
 };
 
 // Redeem voucher
-export const redeemVoucher = async (code: string): Promise<Voucher> => {
+export const redeemVoucher = async (code: string): Promise<boolean> => {
   try {
     const config = getApiConfig();
-    const response = await axios.put(`/vouchers/redeem/${code}`, {}, config);
     
-    return extractApiResponse<Voucher>(response);
+    // Fixed API URL - don't include /api/v1 prefix since it's already in baseURL
+    const apiUrl = `/vouchers/code/${code}/redeem`;
+    console.log(`Redeeming voucher with URL: ${config.baseURL}${apiUrl}`);
+    
+    const response = await axios.post(apiUrl, {}, config);
+    
+    console.log('Redeem voucher response:', {
+      status: response.status,
+      data: response.data
+    });
+    
+    if (response.data && response.data.status === 'success') {
+      return true;
+    }
+    
+    return false;
   } catch (error: any) {
     console.error('Error redeeming voucher:', error);
-    throw new Error(error.response?.data?.message || 'Failed to redeem voucher');
+    
+    // Enhanced error logging
+    if (error.response) {
+      console.error('Redeem error status:', error.response.status);
+      console.error('Redeem error data:', error.response.data);
+    }
+    
+    throw new Error(error.response?.data?.message || `Failed to redeem voucher with code ${code}`);
   }
 }; 

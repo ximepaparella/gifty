@@ -33,6 +33,13 @@ const mainMenuItems: MenuItemConfig[] = [
     permissions: ['admin'], // Only admin can see this
   },
   {
+    key: 'redeem',
+    icon: 'CheckCircleOutlined',
+    label: 'Redeem Voucher',
+    path: '/dashboard/vouchers/redeem',
+    permissions: ['admin', 'customer'], // Both admin and customers can redeem
+  },
+  {
     key: 'orders',
     icon: 'ShoppingCartOutlined',
     label: 'Orders',
