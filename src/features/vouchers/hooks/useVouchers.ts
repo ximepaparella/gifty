@@ -2,19 +2,21 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import { App } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Voucher, VoucherFormData, VouchersState } from '../types'
+import { Voucher, VoucherFormData } from '../types'
 import { 
   getVouchers, 
   getVoucherById, 
+  getVoucherByCode,
   createVoucher, 
   updateVoucher, 
   deleteVoucher,
-  redeemVoucher
+  redeemVoucher as redeemVoucherAPI
 } from '../services/voucherService'
 
 // Query keys
 const VOUCHERS_QUERY_KEY = 'vouchers'
 const VOUCHER_DETAIL_QUERY_KEY = 'voucher-detail'
+const VOUCHER_BY_CODE_KEY = 'voucher-by-code'
 
 export const useVouchers = () => {
   const { notification } = App.useApp();
@@ -27,10 +29,12 @@ export const useVouchers = () => {
     sort: ''
   })
   
-  const [state, setState] = useState<Omit<VouchersState, 'vouchers' | 'pagination'>>({
+  const [state, setState] = useState<any>({
     selectedVoucher: null,
+    currentVoucher: null, // For redemption flow
     loading: false,
-    submitting: false
+    submitting: false,
+    error: null // For tracking errors in redemption flow
   })
 
   // Fetch vouchers list with pagination
@@ -62,35 +66,72 @@ export const useVouchers = () => {
   // Fetch voucher by ID
   const fetchVoucherById = useCallback(async (id: string) => {
     try {
-      // Prevent unnecessary re-fetching if we already have the voucher
-      if (state.selectedVoucher && 
-          (state.selectedVoucher.id === id || state.selectedVoucher._id === id)) {
-        console.log("Voucher already loaded, skipping fetch");
-        return state.selectedVoucher;
-      }
-      
-      setState(prev => ({ ...prev, loading: true }));
-      console.log("Fetching voucher with ID:", id);
+      setState(prev => ({ ...prev, loading: true, error: null }));
       const voucher = await getVoucherById(id);
-      console.log("Fetched voucher:", voucher);
-      
-      // Make sure voucher has all required fields
-      if (!voucher) {
-        throw new Error("No voucher data returned from API");
-      }
-      
       setState(prev => ({ ...prev, selectedVoucher: voucher, loading: false }));
       return voucher;
     } catch (error: any) {
-      console.error("Error fetching voucher:", error);
       notification.error({
         message: 'Error fetching voucher',
         description: error.message
       });
-      setState(prev => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false, error: error.message }));
       throw error;
     }
-  }, [notification, state.selectedVoucher]);
+  }, [notification]);
+
+  // Fetch voucher by code (for redemption)
+  const getVoucherByCodeFn = useCallback(async (code: string) => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      const voucher = await getVoucherByCode(code);
+      setState(prev => ({ ...prev, currentVoucher: voucher, loading: false }));
+      return voucher;
+    } catch (error: any) {
+      notification.error({
+        message: 'Error fetching voucher by code',
+        description: error.message
+      });
+      setState(prev => ({ ...prev, loading: false, error: error.message }));
+      throw error;
+    }
+  }, [notification]);
+
+  // Redeem voucher
+  const redeemVoucherFn = useCallback(async (code: string) => {
+    try {
+      setState(prev => ({ ...prev, submitting: true, error: null }));
+      const result = await redeemVoucherAPI(code);
+      
+      // Update the current voucher with the redeemed status
+      if (result && state.currentVoucher) {
+        setState(prev => ({ 
+          ...prev, 
+          currentVoucher: { 
+            ...prev.currentVoucher, 
+            status: 'redeemed',
+            isRedeemed: true,
+            redeemedAt: new Date().toISOString()
+          }, 
+          submitting: false 
+        }));
+      }
+      
+      notification.success({
+        message: 'Success',
+        description: 'Voucher redeemed successfully'
+      });
+      
+      return result;
+    } catch (error: any) {
+      notification.error({
+        message: 'Error redeeming voucher',
+        description: error.message
+      });
+      setState(prev => ({ ...prev, submitting: false, error: error.message }));
+      throw error;
+    }
+  }, [notification, state.currentVoucher]);
 
   // Create voucher mutation
   const createVoucherMutation = useMutation({
@@ -159,24 +200,6 @@ export const useVouchers = () => {
     }
   })
 
-  // Redeem voucher mutation
-  const redeemVoucherMutation = useMutation({
-    mutationFn: (code: string) => redeemVoucher(code),
-    onSuccess: () => {
-      notification.success({
-        message: 'Success',
-        description: 'Voucher redeemed successfully'
-      })
-      return queryClient.invalidateQueries({ queryKey: [VOUCHERS_QUERY_KEY] })
-    },
-    onError: (error: any) => {
-      notification.error({
-        message: 'Error redeeming voucher',
-        description: error.message
-      })
-    }
-  })
-
   // Handle table pagination change
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     const sort = sorter.order 
@@ -205,26 +228,24 @@ export const useVouchers = () => {
     deleteVoucherMutation.mutate(id)
   }
 
-  // Handle voucher redemption
-  const handleRedeemVoucher = async (code: string) => {
-    redeemVoucherMutation.mutate(code)
-  }
-
   return {
     vouchers: vouchersData?.data || [],
     selectedVoucher: state.selectedVoucher,
+    currentVoucher: state.currentVoucher, // For redemption flow
     loading: isLoading || state.loading,
     submitting: state.submitting,
+    error: state.error, // For redemption flow
     pagination: {
       current: paginationParams.current,
       pageSize: paginationParams.pageSize,
       total: vouchersData?.pagination?.total || 0
     },
     fetchVoucherById,
+    getVoucherByCode: getVoucherByCodeFn,
+    redeemVoucher: redeemVoucherFn,
     handleCreateVoucher,
     handleUpdateVoucher,
     handleDeleteVoucher,
-    handleRedeemVoucher,
     handleTableChange
   }
 } 
