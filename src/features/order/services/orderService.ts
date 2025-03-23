@@ -442,15 +442,35 @@ export const resendStoreEmail = async (id: string): Promise<void> => {
 };
 
 /**
- * Resend all emails
+ * Resend all emails for an order
  */
 export const resendAllEmails = async (id: string): Promise<void> => {
   try {
     const config = getApiConfig();
-    // Using a more standard API path structure
-    await axios.post(`/orders/${id}/emails/all`, {}, config);
+    console.log(`Resending all emails for order ${id}`);
+    
+    // Try different endpoint formats
+    try {
+      // First, try the v1 API format
+      await axios.post(`/orders/${id}/resend-emails`, {}, config);
+      console.log(`Successfully requested resend of all emails for order ${id} using standard endpoint`);
+      return;
+    } catch (standardError) {
+      console.log(`Standard API endpoint failed, trying v1 endpoint`);
+      
+      // Try the v1 endpoint format
+      await axios.post(`/api/v1/orders/${id}/resend-emails`, {}, config);
+      console.log(`Successfully requested resend of all emails for order ${id} using v1 endpoint`);
+    }
   } catch (error) {
     console.error(`Error resending all emails for order ${id}:`, error);
+    
+    // Log more detailed error information
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
+    
     throw error;
   }
 };
@@ -461,42 +481,64 @@ export const resendAllEmails = async (id: string): Promise<void> => {
 export const generateVoucherPdf = async (id: string): Promise<string> => {
   try {
     const config = getApiConfig();
-    // Using a more standard API path structure
-    const response = await axios.get(`/orders/${id}/pdf`, config);
+    // First, get the order to obtain the pdfUrl
+    const order = await getOrderById(id);
+    console.log(`Retrieved order for PDF generation:`, order);
     
-    console.log(`API PDF response:`, response.data);
+    // Check if order has a pdfUrl field
+    if (order.pdfUrl) {
+      console.log(`Found pdfUrl in order: ${order.pdfUrl}`);
+      // If pdfUrl is relative, prepend the base URL
+      if (order.pdfUrl.startsWith('/')) {
+        const baseApiUrl = config.baseURL || '';
+        return `${baseApiUrl}${order.pdfUrl}`;
+      }
+      return order.pdfUrl;
+    }
     
-    // Different APIs might have different formats
-    if (response.data) {
-      // Case 1: Format is using extractApiResponse
+    // Fallback: try to generate PDF using the API endpoint
+    console.log(`No pdfUrl found in order, trying API endpoint`);
+    
+    // Try different endpoint formats since the API might have changed
+    // First try the v1 API format
+    try {
+      const pdfResponse = await axios.get(`/api/v1/orders/${id}/download-pdf`, config);
+      console.log('PDF response from v1 API:', pdfResponse.data);
+      
+      if (pdfResponse.data && (pdfResponse.data.url || pdfResponse.data.pdfUrl)) {
+        return pdfResponse.data.url || pdfResponse.data.pdfUrl;
+      }
+    } catch (pdfError) {
+      console.log(`v1 API endpoint failed, trying standard endpoint`);
+      // Try the standard endpoint format
       try {
-        return extractApiResponse(response);
-      } catch (extractError) {
-        console.warn('Could not use extractApiResponse, falling back to direct data access');
+        const pdfResponse = await axios.get(`/orders/${id}/generate-pdf`, config);
+        console.log('PDF response from standard API:', pdfResponse.data);
         
-        // Case 2: Data is directly in response.data
-        if (typeof response.data === 'string') {
-          return response.data;
+        if (pdfResponse.data && (pdfResponse.data.url || pdfResponse.data.pdfUrl)) {
+          return pdfResponse.data.url || pdfResponse.data.pdfUrl;
         }
-        
-        // Case 3: Data is in response.data.url or similar field
-        if (response.data.url) {
-          return response.data.url;
-        }
-        
-        if (response.data.data && response.data.data.url) {
-          return response.data.data.url;
-        }
-        
-        if (response.data.pdfUrl) {
-          return response.data.pdfUrl;
-        }
+      } catch (standardPdfError) {
+        console.log('Standard API endpoint also failed');
       }
     }
     
-    throw new Error(`Invalid API response format for PDF generation of order ${id}`);
+    // As a last resort, try a POST request instead of GET
+    try {
+      console.log(`Trying POST request to generate PDF`);
+      const pdfResponse = await axios.post(`/orders/${id}/pdf`, {}, config);
+      console.log('PDF response from POST request:', pdfResponse.data);
+      
+      if (pdfResponse.data && (pdfResponse.data.url || pdfResponse.data.pdfUrl)) {
+        return pdfResponse.data.url || pdfResponse.data.pdfUrl;
+      }
+    } catch (postError) {
+      console.log('POST request also failed');
+    }
+    
+    throw new Error(`Could not generate PDF for order ${id}. Please check API endpoints.`);
   } catch (error) {
-    console.error(`Error generating PDF for order ${id}:`, error);
+    console.error(`Error getting PDF URL for order ${id}:`, error);
     throw error;
   }
 };
@@ -506,18 +548,41 @@ export const generateVoucherPdf = async (id: string): Promise<string> => {
  */
 export const downloadVoucherPdf = async (id: string): Promise<void> => {
   try {
+    console.log(`Starting PDF download process for order ${id}`);
     const pdfUrl = await generateVoucherPdf(id);
+    console.log(`Downloading PDF from URL: ${pdfUrl}`);
+    
+    // Extract the filename from the URL, or use the voucher code if available
+    let filename = `voucher-${id}.pdf`;
+    
+    // Try to extract a better filename from the URL
+    if (pdfUrl) {
+      const urlParts = pdfUrl.split('/');
+      const lastPart = urlParts[urlParts.length - 1];
+      if (lastPart && lastPart.includes('.')) {
+        filename = lastPart;
+      }
+    }
+    
+    console.log(`Using filename: ${filename}`);
     
     // Create a hidden anchor element
     const link = document.createElement('a');
     link.href = pdfUrl;
-    link.target = '_blank'; // Optional: Open in new tab
-    link.download = `voucher-${id}.pdf`;
+    link.target = '_blank';
+    link.download = filename;
+    link.style.display = 'none';
     
     // Append to body, click and then remove
     document.body.appendChild(link);
+    console.log('Triggering download...');
     link.click();
-    document.body.removeChild(link);
+    
+    // Small timeout before removing the link to ensure the download starts
+    setTimeout(() => {
+      document.body.removeChild(link);
+      console.log('Download link removed from DOM');
+    }, 100);
   } catch (error) {
     console.error(`Error downloading PDF for order ${id}:`, error);
     throw error;

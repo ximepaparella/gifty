@@ -7,6 +7,8 @@ import {
   GiftOutlined,
   LogoutOutlined,
   SettingOutlined,
+  ReloadOutlined,
+  PieChartOutlined,
 } from '@ant-design/icons';
 import { MenuItemConfig } from './mainMenu';
 import { UserMenuItemConfig } from './userMenu';
@@ -21,6 +23,8 @@ const iconMap: { [key: string]: React.ReactNode } = {
   GiftOutlined: <GiftOutlined />,
   LogoutOutlined: <LogoutOutlined />,
   SettingOutlined: <SettingOutlined />,
+  ReloadOutlined: <ReloadOutlined />,
+  PieChartOutlined: <PieChartOutlined />,
 };
 
 // Convert menu configuration to Ant Design menu items

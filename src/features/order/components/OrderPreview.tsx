@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, memo } from 'react';
-import { OrderFormData } from '../types';
+import React, { useEffect, useState, useMemo, memo, useRef } from 'react';
+import { OrderFormData, Order } from '../types';
 import dynamic from 'next/dynamic';
 import { Spin } from 'antd';
 import { Product } from '@/features/product/types';
@@ -11,6 +11,7 @@ interface OrderPreviewProps {
   voucherCode?: string; // Optional voucher code
   productInfo?: Product | null; // Product information
   storeInfo?: Store | null; // Store information
+  selectedOrder?: Order | null; // Original order data
 }
 
 // Define the template props interface based on what the templates expect
@@ -64,14 +65,22 @@ const OrderPreview: React.FC<OrderPreviewProps> = memo(({
   template, 
   voucherCode,
   productInfo,
-  storeInfo 
+  storeInfo,
+  selectedOrder
 }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('https://placehold.co/200x200/png');
-  const [hasLoggedOnce, setHasLoggedOnce] = useState(false);
+  const hasLoggedRef = useRef<boolean>(false);
+  const renderCountRef = useRef<number>(0);
 
   // Only render if we have data
   if (!data || !data.voucher) {
     return <div>Preview not available</div>;
+  }
+
+  // Log render count to detect infinite loops
+  renderCountRef.current += 1;
+  if (renderCountRef.current % 10 === 1) {
+    console.log(`OrderPreview render count: ${renderCountRef.current}`);
   }
 
   // Extract QR code from the data if available - with proper dependency tracking
@@ -83,21 +92,44 @@ const OrderPreview: React.FC<OrderPreviewProps> = memo(({
       // Check for QR code in different possible locations
       if (voucherObject.qrCode) {
         setQrCodeUrl(voucherObject.qrCode);
-        if (!hasLoggedOnce) {
+        if (!hasLoggedRef.current) {
           console.log("Found QR code in voucher:", voucherObject.qrCode);
-          setHasLoggedOnce(true);
         }
-      } else if (voucherObject.code) {
+      } else if (voucherCode || voucherObject.code) {
         // If we have a code but no QR, we generate a URL to a QR code service
-        const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${voucherObject.code}`;
+        const code = voucherCode || voucherObject.code;
+        const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${code}`;
         setQrCodeUrl(qrServiceUrl);
-        if (!hasLoggedOnce) {
+        if (!hasLoggedRef.current) {
           console.log("Generated QR code URL from code:", qrServiceUrl);
-          setHasLoggedOnce(true);
+          console.log("Using code:", voucherCode || voucherObject.code);
         }
       }
     }
-  }, [data.voucher, hasLoggedOnce]);
+  }, [data.voucher, voucherCode]);
+
+  // Fetch product and store info if needed
+  useEffect(() => {
+    if (!hasLoggedRef.current) {
+      console.log("Current voucher data:", data.voucher);
+      console.log("Original voucher object:", data.voucher);
+      console.log("Data from form:", data);
+      console.log("Sender data:", {
+        senderName: data.voucher.senderName,
+        senderEmail: data.voucher.senderEmail,
+      });
+      console.log("Receiver data:", {
+        receiverName: data.voucher.receiverName,
+        receiverEmail: data.voucher.receiverEmail,
+      });
+      console.log("Voucher code:", voucherCode);
+      console.log("Product info provided:", productInfo);
+      console.log("Store info provided:", storeInfo);
+      
+      // Mark that we've logged debug info
+      hasLoggedRef.current = true;
+    }
+  }, [data, data.voucher, voucherCode, productInfo, storeInfo]);
 
   // Memoize the template props to prevent unnecessary recalculations
   const templateProps = useMemo(() => {
@@ -107,37 +139,88 @@ const OrderPreview: React.FC<OrderPreviewProps> = memo(({
       : '';
 
     // Get code safely from different possible sources
-    const voucherCodeValue = voucherCode || 
+    // IMPORTANT: Use explicitly provided voucherCode first (from API), then fall back to code in data
+    const actualCode = voucherCode || 
       ((data.voucher as any).code ? (data.voucher as any).code : 'PREVIEW1234');
 
-    // Only log once after mount or major prop changes
-    if (!hasLoggedOnce) {
-      console.log('Rendering template:', template, 'with code:', voucherCodeValue);
+    // Enhanced logging for debugging missing fields
+    if (renderCountRef.current === 1 || renderCountRef.current % 20 === 0) {
+      console.log('Rendering template:', template);
+      console.log('Sender Name:', data.voucher.senderName);
+      console.log('Sender Email:', data.voucher.senderEmail);
+      console.log('Receiver Name:', data.voucher.receiverName);
+      console.log('Receiver Email:', data.voucher.receiverEmail);
+      console.log('Voucher Code:', actualCode);
       console.log('QR Code URL:', qrCodeUrl);
-      console.log('Product info:', productInfo?.name);
-      console.log('Store info:', storeInfo?.name);
+      console.log('Product info:', productInfo);
+      console.log('Store info:', storeInfo);
     }
+
+    // Try to access the raw properties from data.voucher directly
+    const rawVoucher = data.voucher as any;
 
     // Prepare the props that the templates expect
     return {
-      // Use actual store name if available, otherwise fallback
-      storeName: storeInfo?.name || 'Store Name',
-      // Use actual product name if available, otherwise fallback
-      productName: productInfo?.name || 'Product Name',
-      message: data.voucher.message || '',
-      senderName: data.voucher.senderName || '',
-      senderEmail: data.voucher.senderEmail || '',
-      receiverName: data.voucher.receiverName || '',
-      receiverEmail: data.voucher.receiverEmail || '',
-      expirationDate: expirationDate,
-      code: voucherCodeValue,
+      // Try multiple fallback options for product name
+      productName: 
+        (productInfo?.name) || 
+        (rawVoucher.productName) || 
+        'Gift Voucher',
+      
+      // Ensure to/from information is always present - use multiple fallback options
+      senderName: 
+        (rawVoucher.senderName && rawVoucher.senderName !== 'undefined') ? rawVoucher.senderName : 
+        (selectedOrder?.voucher?.senderName) || 
+        'Gift Sender',
+      
+      senderEmail: 
+        (rawVoucher.senderEmail && rawVoucher.senderEmail !== 'undefined') ? rawVoucher.senderEmail : 
+        (selectedOrder?.voucher?.senderEmail) || 
+        'sender@example.com',
+      
+      receiverName: 
+        (rawVoucher.receiverName && rawVoucher.receiverName !== 'undefined') ? rawVoucher.receiverName : 
+        (selectedOrder?.voucher?.receiverName) || 
+        'Gift Recipient',
+      
+      receiverEmail: 
+        (rawVoucher.receiverEmail && rawVoucher.receiverEmail !== 'undefined') ? rawVoucher.receiverEmail : 
+        (selectedOrder?.voucher?.receiverEmail) || 
+        'recipient@example.com',
+      
+      // Use multiple fallbacks for store information
+      storeName: 
+        (storeInfo?.name) || 
+        (rawVoucher.storeName) || 
+        'Gift Store',
+      
+      // Remaining fields with improved fallbacks
+      message: 
+        (rawVoucher.message && rawVoucher.message !== 'undefined') ? rawVoucher.message : 
+        'Enjoy your gift!',
+        
+      expirationDate: expirationDate || 'No expiration date',
+      code: actualCode,
       qrCode: qrCodeUrl,
-      // Use actual store data if available, with fallbacks for missing properties
-      storeAddress: storeInfo?.address || '123 Store Address St, City',
-      storeEmail: storeInfo?.email || 'store@example.com',
-      storePhone: storeInfo?.phone || '+1 (123) 456-7890',
-      storeSocial: '@storename', // Default value since social might not be in the Store type
-      storeLogo: 'https://placehold.co/150x150/png', // Default logo
+      
+      // Store details with better fallbacks
+      storeAddress: 
+        (storeInfo?.address) || 
+        (rawVoucher.storeAddress) || 
+        '123 Store Street, City',
+      
+      storeEmail: 
+        (storeInfo?.email) || 
+        (rawVoucher.storeEmail) || 
+        'store@example.com',
+      
+      storePhone: 
+        (storeInfo?.phone) || 
+        (rawVoucher.storePhone) || 
+        '+1 (123) 456-7890',
+      
+      storeSocial: '@storename', // Default value
+      storeLogo: 'https://placehold.co/150x150/png', // Default logo since Store doesn't have a logo property
     };
   }, [
     data.voucher, 
@@ -146,7 +229,8 @@ const OrderPreview: React.FC<OrderPreviewProps> = memo(({
     productInfo, 
     storeInfo, 
     template,
-    hasLoggedOnce
+    renderCountRef.current,
+    selectedOrder
   ]);
 
   // Render the selected template - ensure case consistency

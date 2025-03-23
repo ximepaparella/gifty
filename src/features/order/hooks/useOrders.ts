@@ -20,19 +20,36 @@ export const useOrders = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<string>('desc');
 
-  // Fetch all orders with pagination
+  // Fetch all orders with pagination and sorting
   const {
     data: ordersData,
     isLoading: loading,
     error: ordersError,
     refetch: refetchOrders,
   } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => getOrders(),
+    queryKey: ['orders', sortField, sortOrder],
+    queryFn: () => getOrders(1, 10, `${sortOrder === 'desc' ? '-' : ''}${sortField}`),
     staleTime: 60000, // 1 minute
     retry: false,
   });
+
+  // Handle table sorting and pagination
+  const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
+    console.log('Table change:', sorter);
+    
+    // Handle sorting changes
+    if (sorter && sorter.field) {
+      setSortField(sorter.field);
+      setSortOrder(sorter.order === 'ascend' ? 'asc' : 'desc');
+    } else {
+      // Default sort by created date descending if no sort specified
+      setSortField('createdAt');
+      setSortOrder('desc');
+    }
+  };
 
   // If there was an error fetching orders, show notification
   if (ordersError) {
@@ -85,7 +102,7 @@ export const useOrders = () => {
     isPending: isUpdating,
   } = useMutation({
     mutationFn: ({ id, orderData }: { id: string; orderData: Partial<OrderFormData> }) =>
-      updateOrder(id, orderData),
+      updateOrder(id, orderData as OrderFormData),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       notification.success({
@@ -241,5 +258,6 @@ export const useOrders = () => {
     handleResendStoreEmail,
     handleResendAllEmails,
     handleDownloadVoucherPdf,
+    handleTableChange,
   };
 }; 

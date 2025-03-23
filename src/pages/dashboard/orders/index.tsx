@@ -25,6 +25,7 @@ const OrdersPage: React.FC = () => {
     handleDeleteOrder,
     handleDownloadVoucherPdf,
     handleResendAllEmails,
+    handleTableChange,
   } = useOrders();
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -32,6 +33,15 @@ const OrdersPage: React.FC = () => {
 
   // Table columns configuration
   const columns: ColumnsType<Order> = [
+    {
+      title: 'ID',
+      dataIndex: '_id',
+      key: 'id',
+      render: (_id: string, record: Order) => {
+        const id = record.id || record._id;
+        return <span style={{ fontFamily: 'monospace' }}>{id?.slice(-8) || '-'}</span>;
+      },
+    },
     {
       title: 'Customer Email',
       dataIndex: ['paymentDetails', 'paymentEmail'],
@@ -82,6 +92,8 @@ const OrdersPage: React.FC = () => {
       title: 'Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      sorter: true,
+      defaultSortOrder: 'descend', // Default sort by newest first
       render: (date: string) => (date ? dayjs(date).format('YYYY-MM-DD') : '-'),
     },
     {
@@ -223,6 +235,7 @@ const OrdersPage: React.FC = () => {
           dataSource={orders}
           rowKey={(record) => record.id || record._id || ''}
           loading={loading}
+          onChange={handleTableChange}
           pagination={{
             total,
             showSizeChanger: true,
