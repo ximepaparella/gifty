@@ -24,39 +24,32 @@ const VoucherRedeemPage: NextPage = () => {
   const { currentVoucher, loading, error, getVoucherByCode, redeemVoucher } = useVouchers();
   const [redeemStatus, setRedeemStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [redeemMessage, setRedeemMessage] = useState<string>('');
-  const [debugInfo, setDebugInfo] = useState<string>('');
   const fetchAttempted = useRef(false);
 
   useEffect(() => {
     const fetchVoucher = async () => {
       if (!code || typeof code !== 'string') {
-        setDebugInfo(`Invalid code: ${JSON.stringify(code)}`);
         return;
       }
       
       // Skip if we've already attempted to fetch this voucher
       if (fetchAttempted.current) {
-        setDebugInfo(prev => `${prev}\nSkipping duplicate fetch attempt`);
         return;
       }
       
       fetchAttempted.current = true;
-      setDebugInfo(`Attempting to fetch voucher with code: ${code}`);
       
       try {
         await getVoucherByCode(code);
-        setDebugInfo(prev => `${prev}\nVoucher fetch completed`);
       } catch (err) {
-        setDebugInfo(prev => `${prev}\nError in fetchVoucher: ${err}`);
+        // Optionally handle error if needed in production
       }
     };
 
     if (router.isReady) {
-      setDebugInfo(`Router is ready, code: ${code}`);
       fetchVoucher();
-    } else {
-      setDebugInfo('Router not ready yet');
     }
+  }, []);
   }, [code, router.isReady, getVoucherByCode]);
 
   const handleRedeemVoucher = async () => {
