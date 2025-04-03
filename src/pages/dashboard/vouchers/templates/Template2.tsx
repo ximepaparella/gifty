@@ -1,4 +1,5 @@
 import React from 'react';
+import { StoreSocial } from '@/features/stores/types';
 
 interface TemplateProps {
   senderName: string;
@@ -11,8 +12,8 @@ interface TemplateProps {
   storeAddress: string;
   storeEmail: string;
   storePhone: string;
-  storeSocial: string;
-  storeLogo: string;
+  storeSocial: StoreSocial;
+  storeLogo: string | null;
   expirationDate: string;
   code: string;
   qrCode: string;
@@ -171,9 +172,27 @@ const Template2: React.FC<TemplateProps> = ({
               justifyContent: 'center',
               marginTop: '10px',
             }}>
-              <div style={{ margin: '0 10px' }}>{storeEmail}</div>
-              <div style={{ margin: '0 10px' }}>{storePhone}</div>
-              <div style={{ margin: '0 10px' }}>{storeSocial}</div>
+              <div className="store-info">
+                <div style={{ margin: '0 10px' }}>{storeEmail}</div>
+                <div style={{ margin: '0 10px' }}>{storePhone}</div>
+                {storeSocial.facebook && (
+                  <div style={{ margin: '0 10px' }}>Facebook: {storeSocial.facebook}</div>
+                )}
+                {storeSocial.instagram && (
+                  <div style={{ margin: '0 10px' }}>Instagram: {storeSocial.instagram}</div>
+                )}
+                {storeSocial.tiktok && (
+                  <div style={{ margin: '0 10px' }}>TikTok: {storeSocial.tiktok}</div>
+                )}
+                {storeSocial.youtube && (
+                  <div style={{ margin: '0 10px' }}>YouTube: {storeSocial.youtube}</div>
+                )}
+                {storeSocial.others?.map((social, index) => (
+                  <div key={index} style={{ margin: '0 10px' }}>
+                    {social.name}: {social.url}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

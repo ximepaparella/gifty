@@ -18,15 +18,19 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Helper function to get the base URL and auth headers
-const getApiConfig = () => {
+const getApiConfig = (isMultipart = false) => {
   const token = authService.getToken();
   return {
     baseURL: API_URL,
     headers: token ? {
       'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      ...(isMultipart ? {
+        'Content-Type': 'multipart/form-data'
+      } : {
+        'Content-Type': 'application/json'
+      })
     } : {
-      'Content-Type': 'application/json'
+      'Content-Type': isMultipart ? 'multipart/form-data' : 'application/json'
     }
   };
 };
@@ -80,24 +84,52 @@ export const getStoreById = async (id: string): Promise<Store> => {
 
 export const createStore = async (storeData: StoreFormData): Promise<Store> => {
   try {
-    const config = getApiConfig();
-    const response = await axios.post('/stores', storeData, config);
-    
-    // Extract store data using the utility function
-    return extractApiResponse<Store>(response);
+    // If there's a logo file, use FormData
+    if (storeData.logo instanceof File) {
+      const formData = new FormData();
+      formData.append('logo', storeData.logo);
+      
+      // Append other store data as JSON string
+      const storeDataWithoutLogo = { ...storeData };
+      delete storeDataWithoutLogo.logo;
+      formData.append('data', JSON.stringify(storeDataWithoutLogo));
+      
+      const config = getApiConfig(true);
+      const response = await axios.post('/stores', formData, config);
+      return extractApiResponse<Store>(response);
+    } else {
+      // If no logo file, send as regular JSON
+      const config = getApiConfig();
+      const response = await axios.post('/stores', storeData, config);
+      return extractApiResponse<Store>(response);
+    }
   } catch (error: any) {
     console.error('Error creating store:', error);
     throw new Error(error.response?.data?.message || 'Failed to create store');
   }
 };
 
-export const updateStore = async (id: string, storeData: StoreFormData): Promise<Store> => {
+export const updateStore = async (id: string, storeData: Partial<StoreFormData>): Promise<Store> => {
   try {
-    const config = getApiConfig();
-    const response = await axios.put(`/stores/${id}`, storeData, config);
-    
-    // Extract store data using the utility function
-    return extractApiResponse<Store>(response);
+    // If there's a logo file, use FormData
+    if (storeData.logo instanceof File) {
+      const formData = new FormData();
+      formData.append('logo', storeData.logo);
+      
+      // Append other store data as JSON string
+      const storeDataWithoutLogo = { ...storeData };
+      delete storeDataWithoutLogo.logo;
+      formData.append('data', JSON.stringify(storeDataWithoutLogo));
+      
+      const config = getApiConfig(true);
+      const response = await axios.put(`/stores/${id}`, formData, config);
+      return extractApiResponse<Store>(response);
+    } else {
+      // If no logo file, send as regular JSON
+      const config = getApiConfig();
+      const response = await axios.put(`/stores/${id}`, storeData, config);
+      return extractApiResponse<Store>(response);
+    }
   } catch (error: any) {
     console.error('Error updating store:', error);
     throw new Error(error.response?.data?.message || 'Failed to update store');

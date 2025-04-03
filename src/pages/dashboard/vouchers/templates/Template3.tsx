@@ -1,4 +1,5 @@
 import React from 'react';
+import { StoreSocial } from '@/features/stores/types';
 
 interface TemplateProps {
   senderName: string;
@@ -11,8 +12,8 @@ interface TemplateProps {
   storeAddress: string;
   storeEmail: string;
   storePhone: string;
-  storeSocial: string;
-  storeLogo: string;
+  storeSocial: StoreSocial;
+  storeLogo: string | null;
   expirationDate: string;
   code: string;
   qrCode: string;
@@ -230,33 +231,35 @@ const Template3: React.FC<TemplateProps> = ({
             textAlign: 'center',
             fontSize: '14px',
           }}>
-            <div>{storeName} | {storeAddress}</div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              marginTop: '10px',
-            }}>
-              <div style={{
-                margin: '5px 15px',
-                display: 'flex',
-                alignItems: 'center',
-              }}>
-                <span style={{ marginRight: '8px', opacity: 0.8 }}>✉️</span> {storeEmail}
-              </div>
-              <div style={{
-                margin: '5px 15px',
-                display: 'flex',
-                alignItems: 'center',
-              }}>
-                <span style={{ marginRight: '8px', opacity: 0.8 }}>📞</span> {storePhone}
-              </div>
-              <div style={{
-                margin: '5px 15px',
-                display: 'flex',
-                alignItems: 'center',
-              }}>
-                <span style={{ marginRight: '8px', opacity: 0.8 }}>📱</span> {storeSocial}
+            <div className="store-info">
+              <div>{storeAddress}</div>
+              <div>{storeEmail} | {storePhone}</div>
+              <div>
+                {storeSocial.facebook && (
+                  <span style={{ marginRight: '10px' }}>
+                    <i className="fab fa-facebook"></i> {storeSocial.facebook}
+                  </span>
+                )}
+                {storeSocial.instagram && (
+                  <span style={{ marginRight: '10px' }}>
+                    <i className="fab fa-instagram"></i> {storeSocial.instagram}
+                  </span>
+                )}
+                {storeSocial.tiktok && (
+                  <span style={{ marginRight: '10px' }}>
+                    <i className="fab fa-tiktok"></i> {storeSocial.tiktok}
+                  </span>
+                )}
+                {storeSocial.youtube && (
+                  <span style={{ marginRight: '10px' }}>
+                    <i className="fab fa-youtube"></i> {storeSocial.youtube}
+                  </span>
+                )}
+                {storeSocial.others?.map((social, index) => (
+                  <span key={index} style={{ marginRight: '10px' }}>
+                    <i className="fas fa-link"></i> {social.name}: {social.url}
+                  </span>
+                ))}
               </div>
             </div>
           </div>

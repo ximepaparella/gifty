@@ -1,4 +1,5 @@
 import React from 'react';
+import { StoreSocial } from '@/features/stores/types';
 
 interface TemplateProps {
   senderName: string;
@@ -11,8 +12,8 @@ interface TemplateProps {
   storeAddress: string;
   storeEmail: string;
   storePhone: string;
-  storeSocial: string;
-  storeLogo: string;
+  storeSocial: StoreSocial;
+  storeLogo: string | null;
   expirationDate: string;
   code: string;
   qrCode: string;
@@ -64,13 +65,52 @@ const Template1: React.FC<TemplateProps> = ({
               fontSize: '14px',
               lineHeight: 1.5,
             }}>
-              <p style={{ margin: '5px 0' }}>{storeAddress}</p>
-              <p style={{ margin: '5px 0' }}>{storeEmail}</p>
-              <p style={{ margin: '5px 0' }}>{storePhone}</p>
-              <p style={{ margin: '5px 0' }}>
-                <span style={{ marginRight: '10px', fontSize: '18px' }}>📱</span>
-                <span>{storeSocial}</span>
-              </p>
+              <div style={{ marginTop: '10px', fontSize: '14px' }}>
+                <p style={{ margin: '5px 0' }}>
+                  <span style={{ marginRight: '10px', fontSize: '18px' }}>📍</span>
+                  <span>{storeAddress}</span>
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <span style={{ marginRight: '10px', fontSize: '18px' }}>✉️</span>
+                  <span>{storeEmail}</span>
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <span style={{ marginRight: '10px', fontSize: '18px' }}>📞</span>
+                  <span>{storePhone}</span>
+                </p>
+                <div style={{ margin: '10px 0' }}>
+                  {storeSocial.facebook && (
+                    <p style={{ margin: '5px 0' }}>
+                      <span style={{ marginRight: '10px', fontSize: '18px' }}>📱</span>
+                      <span>Facebook: {storeSocial.facebook}</span>
+                    </p>
+                  )}
+                  {storeSocial.instagram && (
+                    <p style={{ margin: '5px 0' }}>
+                      <span style={{ marginRight: '10px', fontSize: '18px' }}>📱</span>
+                      <span>Instagram: {storeSocial.instagram}</span>
+                    </p>
+                  )}
+                  {storeSocial.tiktok && (
+                    <p style={{ margin: '5px 0' }}>
+                      <span style={{ marginRight: '10px', fontSize: '18px' }}>📱</span>
+                      <span>TikTok: {storeSocial.tiktok}</span>
+                    </p>
+                  )}
+                  {storeSocial.youtube && (
+                    <p style={{ margin: '5px 0' }}>
+                      <span style={{ marginRight: '10px', fontSize: '18px' }}>📱</span>
+                      <span>YouTube: {storeSocial.youtube}</span>
+                    </p>
+                  )}
+                  {storeSocial.others?.map((social, index) => (
+                    <p key={index} style={{ margin: '5px 0' }}>
+                      <span style={{ marginRight: '10px', fontSize: '18px' }}>📱</span>
+                      <span>{social.name}: {social.url}</span>
+                    </p>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
           <div style={{
