@@ -85,22 +85,29 @@ export const createProduct = async (productData: ProductFormData): Promise<Produ
     if (productData.image instanceof File) {
       const formData = new FormData();
       
-      // Add all product data fields directly
-      formData.append('name', productData.name);
-      formData.append('description', productData.description);
-      formData.append('price', productData.price.toString());
-      formData.append('storeId', productData.storeId);
-      
-      // Add image file last
+      // Add image file
       formData.append('image', productData.image);
+      
+      // Create the data object without the image
+      const { image, ...productDataWithoutImage } = productData;
+      
+      // Add the data as a JSON string
+      formData.append('data', JSON.stringify({
+        ...productDataWithoutImage,
+        isActive: true
+      }));
       
       const config = getApiConfig(true);
       const response = await axios.post('/products', formData, config);
       return extractApiResponse(response);
     } else {
-      // If no image file, send as regular JSON
+      // If no image file, send as regular JSON with isActive
+      const { image, ...productDataWithoutImage } = productData;
       const config = getApiConfig();
-      const response = await axios.post('/products', productData, config);
+      const response = await axios.post('/products', {
+        ...productDataWithoutImage,
+        isActive: true
+      }, config);
       return extractApiResponse(response);
     }
   } catch (error: any) {

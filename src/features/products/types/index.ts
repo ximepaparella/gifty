@@ -16,6 +16,7 @@ export interface ProductFormData {
   price: number;
   storeId: string;
   image?: File | null;
+  isActive?: boolean;
 }
 
 export interface ProductsState {

@@ -63,12 +63,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
       // Get the actual File object from the Upload component
       const currentImage = fileList[0]?.originFileObj;
 
-      // Create form data without the Upload component metadata
+      // Create form data with all required fields
       const formData: ProductFormData = {
         name: values.name,
         description: values.description,
         price: values.price,
         storeId: selectedStoreId,
+        isActive: true,
       };
 
       // Only add image if we have a valid File object
@@ -89,12 +90,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    setFileList(newFileList);
-    // If there's a file in the new list, set it as the image file
-    if (newFileList.length > 0 && newFileList[0].originFileObj) {
-      setImageFile(newFileList[0].originFileObj);
-    } else {
-      setImageFile(null);
+    const file = newFileList[0];
+    
+    // Only update if it's a new file or clearing the list
+    if ((file?.originFileObj instanceof File) || newFileList.length === 0) {
+      setFileList(newFileList);
+      setImageFile(file?.originFileObj || null);
     }
   };
 
