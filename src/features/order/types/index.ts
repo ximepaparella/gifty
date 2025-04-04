@@ -1,36 +1,43 @@
+import { Customer } from '@/features/customer/types';
+
+export enum OrderStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled'
+}
+
 export interface PaymentDetails {
   paymentId: string;
   paymentStatus: 'pending' | 'completed' | 'failed';
   paymentEmail: string;
   amount: number;
   provider: 'mercadopago' | 'paypal' | 'stripe';
-  createdAt: string;
-  updatedAt: string;
 }
 
-export interface VoucherDetails {
+export interface Voucher {
   storeId: string;
   productId: string;
   code: string;
-  status: 'active' | 'redeemed' | 'expired';
-  isRedeemed: boolean;
-  redeemedAt: string | null;
-  expirationDate: string;
-  qrCode?: string;
+  expirationDate: string | Date;
   senderName: string;
   senderEmail: string;
   receiverName: string;
   receiverEmail: string;
   message: string;
   template: string;
+  qrCode?: string;
 }
 
 export interface Order {
-  id?: string;
   _id?: string;
+  id?: string;
   customerId: string;
+  customer?: Customer;
   paymentDetails: PaymentDetails;
-  voucher: VoucherDetails;
+  voucher: Voucher;
+  status: OrderStatus;
   emailsSent: boolean;
   pdfGenerated: boolean;
   pdfUrl: string | null;
@@ -40,24 +47,8 @@ export interface Order {
 
 export interface OrderFormData {
   customerId: string;
-  paymentDetails: {
-    paymentId: string;
-    paymentStatus: 'pending' | 'completed' | 'failed';
-    paymentEmail: string;
-    amount: number;
-    provider: 'mercadopago' | 'paypal' | 'stripe';
-  };
-  voucher: {
-    storeId: string;
-    productId: string;
-    expirationDate: string;
-    senderName: string;
-    senderEmail: string;
-    receiverName: string;
-    receiverEmail: string;
-    message: string;
-    template: string;
-  };
+  paymentDetails: PaymentDetails;
+  voucher: Voucher;
 }
 
 export interface OrdersState {
