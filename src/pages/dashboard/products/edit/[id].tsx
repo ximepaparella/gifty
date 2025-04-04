@@ -3,7 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { Card, Typography, Spin } from 'antd'
 import DashboardLayout from '@/layouts/DashboardLayout'
-import ProductForm from '@/features/product/components/ProductForm'
+import ProductForm from '@/features/products/components/ProductForm'
 import { useProducts } from '@/features/product/hooks/useProducts'
 
 const { Title } = Typography
@@ -32,9 +32,9 @@ const EditProductPage = () => {
     fetchProduct();
   }, [fetchProduct]);
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = async (values: any) => {
     if (id && typeof id === 'string') {
-      handleUpdateProduct(id, values)
+      await handleUpdateProduct(id, values);
     }
   }
 
@@ -52,23 +52,39 @@ const EditProductPage = () => {
     )
   }
 
+  if (!selectedProduct) {
+    return (
+      <DashboardLayout title="Edit Product">
+        <Card>
+          <div>No product found with ID: {id}</div>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+
+  const storeId = selectedProduct.storeId;
+  if (!storeId) {
+    return (
+      <DashboardLayout title="Edit Product">
+        <Card>
+          <div>Invalid store ID for product</div>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <>
       <Head>
-        <title>Edit Product | Gifty Dashboard</title>
+        <title>Editar Producto | Gifty Dashboard</title>
       </Head>
       <DashboardLayout title="Edit Product">
-        <Card title="Edit Product">
-          {selectedProduct ? (
-            <ProductForm
-              initialValues={selectedProduct}
-              onSubmit={handleSubmit}
-              loading={submitting}
-            />
-          ) : (
-            <div>No product found with ID: {id}</div>
-          )}
-        </Card>
+        <ProductForm
+          initialValues={selectedProduct}
+          onSubmit={handleSubmit}
+          loading={submitting}
+          storeId={storeId}
+        />
       </DashboardLayout>
     </>
   )

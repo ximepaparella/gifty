@@ -1,4 +1,5 @@
 import React from 'react';
+import { StoreSocial } from '@/features/stores/types';
 
 interface TemplateProps {
   senderName: string;
@@ -11,8 +12,8 @@ interface TemplateProps {
   storeAddress: string;
   storeEmail: string;
   storePhone: string;
-  storeSocial: string;
-  storeLogo: string;
+  storeSocial: StoreSocial;
+  storeLogo: string | null;
   expirationDate: string;
   code: string;
   qrCode: string;
@@ -290,7 +291,15 @@ const Template4: React.FC<TemplateProps> = ({
               margin: '10px 0',
             }}></div>
             <div>{storeAddress} | {storeEmail} | {storePhone}</div>
-            <div>{storeSocial}</div>
+            <div>
+              {storeSocial.facebook && `Facebook: ${storeSocial.facebook}`}
+              {storeSocial.instagram && ` | Instagram: ${storeSocial.instagram}`}
+              {storeSocial.tiktok && ` | TikTok: ${storeSocial.tiktok}`}
+              {storeSocial.youtube && ` | YouTube: ${storeSocial.youtube}`}
+              {storeSocial.others?.map((social, index) => 
+                ` | ${social.name}: ${social.url}`
+              )}
+            </div>
           </div>
         </div>
       </div>

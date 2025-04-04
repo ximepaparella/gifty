@@ -108,10 +108,15 @@ export const useStores = () => {
     mutationFn: ({ id, values }: { id: string, values: StoreFormData }) => {
       return updateStore(id, values)
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       notification.success({ message: 'Tienda actualizada exitosamente' })
+      
+      // Only invalidate the stores list query, don't redirect
+      // This allows the user to stay on the edit page and see the updated store
       queryClient.invalidateQueries({ queryKey: [STORES_QUERY_KEY] })
-      router.push('/dashboard/stores')
+      
+      // Return the updated data
+      return data
     },
     onError: (error: any) => {
       notification.error({
@@ -149,24 +154,54 @@ export const useStores = () => {
   // Update store handler
   const handleUpdateStore = useCallback((id: string, values: StoreFormData): Promise<void> => {
     return new Promise((resolve, reject) => {
+      console.log('========== HANDLE UPDATE STORE START ==========');
+      console.log('Updating store with ID:', id);
+      console.log('Received form values:', values);
+      console.log('Logo in values:', values.logo ? 
+        (values.logo instanceof File ? 
+          `File: ${values.logo.name} (${values.logo.size} bytes)` : 
+          typeof values.logo) : 
+        'undefined/null');
+      
       if (!id) {
+        console.log('Missing store ID, rejecting');
         notification.error({
           message: 'Error al actualizar tienda',
           description: 'ID de tienda no proporcionado'
-        })
+        });
         reject(new Error('ID de tienda no proporcionado'));
         return;
       }
       
+      console.log('Calling updateStoreMutation with data...');
       updateStoreMutation.mutate(
         { id, values },
         {
-          onSuccess: () => resolve(),
-          onError: (error) => reject(error)
+          onSuccess: async (data) => {
+            console.log('Store update successful');
+            
+            // Invalidate the cache for this specific store
+            console.log('Invalidating store cache and refetching updated data');
+            queryClient.invalidateQueries({ queryKey: [STORE_DETAIL_QUERY_KEY, id] });
+            
+            // Update the store in the state with the fresh data from the server
+            setState(prev => ({ ...prev, selectedStore: data }));
+            
+            console.log('Updated store data in state:', data);
+            console.log('========== HANDLE UPDATE STORE END (SUCCESS) ==========');
+            
+            // Resolve the promise after everything is updated
+            resolve();
+          },
+          onError: (error) => {
+            console.error('Store update failed:', error);
+            console.log('========== HANDLE UPDATE STORE END (ERROR) ==========');
+            reject(error);
+          }
         }
       );
     });
-  }, [updateStoreMutation, notification])
+  }, [updateStoreMutation, notification, queryClient]);
   
   // Delete store handler
   const handleDeleteStore = useCallback((id: string) => {
