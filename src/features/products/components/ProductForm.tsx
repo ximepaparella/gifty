@@ -25,27 +25,34 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [form] = Form.useForm();
   const router = useRouter();
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
-  const { stores, loading: loadingStores } = useStores();
-
-  // Initialize fileList with existing image if available
-  useEffect(() => {
+  const [fileList, setFileList] = useState<UploadFile[]>(() => {
     if (initialValues?.image) {
+      const timestamp = new Date().getTime();
       const imageUrl = initialValues.image.startsWith('http') 
-        ? initialValues.image 
-        : `${process.env.NEXT_PUBLIC_API_URL}${initialValues.image}`;
+        ? `${initialValues.image}?t=${timestamp}` 
+        : `${process.env.NEXT_PUBLIC_API_URL}${initialValues.image}?t=${timestamp}`;
       
-      setFileList([{
+      return [{
         uid: '-1',
         name: 'product-image',
         status: 'done',
         url: imageUrl
-      }]);
+      }];
     }
-  }, [initialValues?.image]);
+    return [];
+  });
+  const { stores, loading: loadingStores } = useStores();
+  const userSelectedFile = React.useRef(false);
+  const formInitialized = React.useRef(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleSubmit = async (values: any) => {
     try {
+      console.log('========== FORM SUBMISSION START ==========');
+      console.log('Form values:', values);
+      console.log('Image file state:', imageFile);
+      console.log('FileList state:', fileList);
+      
       // Get the selected store ID or default store ID
       const selectedStoreId = values.storeId || defaultStoreId;
       
@@ -60,25 +67,33 @@ const ProductForm: React.FC<ProductFormProps> = ({
         return;
       }
 
-      // Create form data with all required fields
-      const formData: ProductFormData = {
+      if (!imageFile) {
+        message.error('Por favor seleccione una imagen');
+        return;
+      }
+
+      // Create product data object
+      const productData: ProductFormData = {
         name: values.name,
         description: values.description,
         price: values.price,
         storeId: selectedStoreId,
         isActive: true,
-        image: imageFile // Use the imageFile state directly
+        image: imageFile // Pass the File object directly
       };
 
-      console.log('Submitting product with data:', formData);
-      console.log('Image file:', imageFile);
+      console.log('Submitting product with data:', productData);
+      await onSubmit(productData);
       
-      await onSubmit(formData);
       if (!initialValues) {
+        console.log('No initialValues, resetting form');
         form.resetFields();
         setImageFile(null);
         setFileList([]);
+        userSelectedFile.current = false;
       }
+      
+      console.log('========== FORM SUBMISSION END ==========');
     } catch (error) {
       console.error('Error submitting form:', error);
       message.error('Error al crear el producto');
@@ -86,38 +101,53 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    console.log('Upload onChange:', newFileList);
+    console.log('========== UPLOAD CHANGE START ==========');
+    console.log('handleChange triggered with newFileList:', newFileList);
+    
+    // Update fileList state
     setFileList(newFileList);
     
-    // Update imageFile when there's a new file
+    // Handle new file selection
     if (newFileList.length > 0 && newFileList[0].originFileObj) {
+      console.log('New file selected:', newFileList[0].originFileObj);
       setImageFile(newFileList[0].originFileObj);
-      console.log('Setting image file:', newFileList[0].originFileObj);
-    } else {
+      userSelectedFile.current = true;
+    } else if (newFileList.length === 0) {
+      console.log('Clearing file states');
       setImageFile(null);
-      console.log('Clearing image file');
+      userSelectedFile.current = false;
     }
+    
+    console.log('========== UPLOAD CHANGE END ==========');
   };
 
   const beforeUpload = (file: RcFile) => {
-    console.log('beforeUpload file:', file);
+    console.log('========== BEFORE UPLOAD START ==========');
+    
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
       message.error('Solo se permiten archivos de imagen');
       return false;
     }
+    
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
       message.error('La imagen debe ser menor a 2MB');
       return false;
     }
+    
+    console.log('File passed validation');
+    console.log('========== BEFORE UPLOAD END ==========');
     return false; // Prevent auto upload
   };
 
   const handleRemove = () => {
-    console.log('Removing image');
+    console.log('========== REMOVE START ==========');
     setImageFile(null);
     setFileList([]);
+    userSelectedFile.current = false;
+    console.log('States cleared');
+    console.log('========== REMOVE END ==========');
     return true;
   };
 
@@ -199,14 +229,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <Form.Item
           name="image"
           label="Imagen del Producto"
-          valuePropName="fileList"
-          getValueFromEvent={(e) => {
-            console.log('Upload event:', e);
-            if (Array.isArray(e)) {
-              return e;
-            }
-            return e?.fileList;
-          }}
+          rules={[{ required: true, message: 'Por favor seleccione una imagen' }]}
         >
           <Upload
             accept="image/*"
@@ -231,12 +254,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button type="primary" htmlType="submit" loading={loading || uploadingImage}>
             {initialValues ? 'Actualizar Producto' : 'Crear Producto'}
           </Button>
           <Button 
             style={{ marginLeft: 8 }} 
             onClick={() => router.push('/dashboard/products')}
+            disabled={uploadingImage}
           >
             Cancelar
           </Button>
