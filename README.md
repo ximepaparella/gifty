@@ -1,116 +1,140 @@
-# 🎁 Gifty - Gift Vouchers Platform
+# Gifty Platform
 
-A white-label solution for businesses to create, sell, and manage gift vouchers.
+Gifty is a modern e-commerce platform built with Next.js, focusing on gift card and voucher management for stores and services.
 
 ## 🚀 Features
 
-- **Admin Dashboard** for Store Managers and Admins
-- **Customer Portal** for end-users to purchase vouchers
-- **Authentication** via NextAuth.js
-- **Payments** via MercadoPago
-- **White-Label Customization**
-- **Voucher Validation** via QR Code & Unique Codes
-- **Analytics Dashboard** for business insights
-- **User Management** for different access levels
+- 🔐 Authentication & Authorization
+- 🏪 Store Management
+- 🎁 Product Management
+- 🎫 Voucher System
+- 📊 Dashboard Analytics
+- 👥 User Management
+- 🛍️ Order Processing
+- 🖼️ Image Upload & Management
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
-- **Framework:** Next.js (Pages Router)
-- **UI Library:** Ant Design
-- **Charts:** Ant Design Charts
-- **State Management:** React Query
-- **Authentication:** NextAuth.js
-- **API Integration:** Axios
-- **Architecture:** Feature-based architecture with clean separation of concerns
-- **Testing:** Jest + React Testing Library
+- **Frontend Framework**: Next.js with TypeScript
+- **UI Library**: Ant Design
+- **State Management**: React Query
+- **API Client**: Axios
+- **Form Handling**: Ant Design Form
+- **Image Storage**: Cloudinary
+- **Authentication**: JWT
+- **Code Quality**: ESLint & Prettier
 
-## 📦 Project Structure
+## 📋 Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- MongoDB instance
+- Cloudinary account
+
+## 🔧 Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/gifty.git
+cd gifty
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your configuration:
+```env
+NEXT_PUBLIC_API_URL=your_api_url
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+```
+
+4. Run the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+## 🏗️ Project Structure
 
 ```
 src/
-├── config/           # Configuration files
-│   ├── constants.ts  # Global constants
-│   ├── menu/         # Menu configuration
-├── features/         # Feature modules
-│   ├── dashboard/    # Dashboard feature
-│   ├── login/        # Authentication feature
-│   ├── vouchers/     # Vouchers feature
-│   ├── users/        # User management feature
-│   ├── stores/       # Store management feature
-│   ├── checkout/     # Checkout feature
-│   └── shared/       # Shared components
-├── layouts/          # Layout components
-│   ├── DashboardLayout.tsx    # Admin dashboard layout
-│   └── FullWidthLayout.tsx    # Full-width layout for auth
-├── mockups/          # Mock data for development
-├── pages/            # Next.js pages
-│   ├── api/          # API routes
-│   ├── auth/         # Authentication pages
-│   ├── dashboard/    # Dashboard pages
-├── styles/           # Global styles
-└── types/            # TypeScript type definitions
+├── components/     # Shared components
+├── config/        # Configuration files
+├── features/      # Feature modules
+│   ├── auth/      # Authentication
+│   ├── stores/    # Store management
+│   ├── products/  # Product management
+│   ├── vouchers/  # Voucher system
+│   ├── users/     # User management
+│   └── order/     # Order processing
+├── layouts/       # Page layouts
+├── pages/         # Next.js pages
+├── styles/        # Global styles
+├── types/         # TypeScript types
+└── utils/         # Utility functions
 ```
 
-## 🔒 Authentication Flow
+## 🔑 Key Features
 
-The platform uses NextAuth.js for authentication with:
+### Authentication
+- JWT-based authentication
+- Role-based access control
+- Protected routes
 
-- JWT token-based authentication
-- Role-based access control (Admin, Store Manager)
-- Protected routes with session validation
-- API route authentication
+### Store Management
+- Create and manage stores
+- Upload store logos
+- Manage store information and social media links
+- Store owner assignment
 
-## 📊 Dashboard Features
+### Product Management
+- Create and manage products
+- Product image upload
+- Price management
+- Store association
 
-- **Overview Cards:** Quick metrics of business performance
-- **Sales Analytics:** Visual representation of sales data
-- **Voucher Performance:** Top-selling vouchers
-- **Order Management:** Recent orders and status tracking
-- **Store Performance:** Analysis by store
+### Voucher System
+- Create and manage vouchers
+- Voucher validation
+- Usage tracking
 
-## 🚀 Getting Started
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/gifty.git
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. **Run the development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open [http://localhost:3001](http://localhost:3001)**
+### User Management
+- User roles (Admin, Store Manager, Customer)
+- User profile management
+- Access control
 
 ## 🧪 Testing
 
+Run the test suite:
 ```bash
-# Run tests
 npm test
-
-# Run tests in watch mode
-npm run test:watch
+# or
+yarn test
 ```
 
-## 🛠 Scripts
+## 📚 Documentation
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-- `npm test` - Run tests
+For detailed documentation about the platform's features and implementations, see [DOCUMENTATION.md](./DOCUMENTATION.md).
 
-## 📝 License
+## 🤝 Contributing
 
-ISC
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
