@@ -1,227 +1,150 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { Input, Button, Card, Spin, Divider, Typography, Row, Col, Space } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, GiftOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { NextPage } from 'next';
 import Head from 'next/head';
-import DashboardLayout from '@/layouts/DashboardLayout';
+import { Layout, Input, Button, Space, Typography, Alert } from 'antd';
 import { useVouchers } from '@/features/vouchers/hooks/useVouchers';
-import Template1 from './templates/Template1';
-import Template2 from './templates/Template2';
-import Template3 from './templates/Template3';
-import Template4 from './templates/Template4';
-import Template5 from './templates/Template5';
+import VoucherRedemption from '@/features/vouchers/components/VoucherRedemption';
+import DashboardLayout from '@/layouts/DashboardLayout';
 
-const { Title, Text } = Typography;
+const { Content } = Layout;
+const { Title } = Typography;
 
-const VoucherRedemptionPage = () => {
-  const router = useRouter();
+const VoucherRedeemPage: NextPage = () => {
   const [voucherCode, setVoucherCode] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [redeemed, setRedeemed] = useState(false);
+  const [showRedemption, setShowRedemption] = useState(false);
+  const [redeemSuccess, setRedeemSuccess] = useState(false);
+  const [redeemError, setRedeemError] = useState<string>();
+  
+  console.log('Dashboard redeem page render');
   
   const { 
     currentVoucher, 
     loading, 
-    error,
+    error, 
     getVoucherByCode, 
-    redeemVoucher, 
-    submitting
+    redeemVoucher,
+    submitting 
   } = useVouchers();
 
-  // Check for code in URL query
-  useEffect(() => {
-    if (router.query.code) {
-      setVoucherCode(router.query.code as string);
-      handleSearch(router.query.code as string);
-    }
-  }, [router.query]);
+  // Extract the actual voucher data from the response
+  const voucherData = currentVoucher?.voucher;
+  
+  console.log('Current voucher data:', {
+    hasVoucher: !!voucherData,
+    voucherData,
+    loading,
+    error,
+    submitting
+  });
 
-  const handleSearch = async (code: string) => {
-    if (!code) {
+  const handleSearch = async () => {
+    if (!voucherCode.trim()) {
+      console.log('No voucher code entered');
       return;
     }
-
-    setIsSearching(true);
+    
+    const code = voucherCode.trim();
+    console.log('Searching for voucher with code:', code);
+    
     try {
-      await getVoucherByCode(code);
-      setIsSearching(false);
+      setRedeemError(undefined);
+      setShowRedemption(false);
+      setRedeemSuccess(false);
+      
+      const voucher = await getVoucherByCode(code);
+      console.log('Found voucher:', voucher);
+      
+      setShowRedemption(true);
     } catch (error) {
-      setIsSearching(false);
+      console.error('Error searching for voucher:', error);
+      if (error instanceof Error) {
+        setRedeemError(error.message);
+      } else {
+        setRedeemError('An unexpected error occurred while searching for the voucher');
+      }
     }
   };
 
   const handleRedeem = async () => {
-    if (!currentVoucher) return;
+    console.log('Redeem button clicked, current voucher:', voucherData);
+    
+    if (!voucherData?.code) {
+      console.error('Cannot redeem: No voucher code available');
+      return;
+    }
     
     try {
-      const success = await redeemVoucher(currentVoucher.code);
+      setRedeemError(undefined);
+      console.log('Attempting to redeem voucher with code:', voucherData.code);
+      
+      const success = await redeemVoucher(voucherData.code);
+      console.log('Redeem result:', success);
+      
       if (success) {
-        setRedeemed(true);
+        setRedeemSuccess(true);
+        console.log('Redemption successful, refreshing voucher data...');
+        await getVoucherByCode(voucherData.code);
       }
     } catch (error) {
-      // Error is handled in the hook
+      console.error('Error during redemption:', error);
+      if (error instanceof Error) {
+        setRedeemError(error.message);
+      } else {
+        setRedeemError('An unexpected error occurred while redeeming the voucher');
+      }
     }
   };
-
-  const renderVoucherTemplate = () => {
-    if (!currentVoucher) return null;
-
-    const templateProps = {
-      recipientName: currentVoucher.recipientName || '',
-      message: currentVoucher.message || '',
-      senderName: currentVoucher.senderName || '',
-      senderEmail: currentVoucher.senderEmail || '',
-      receiverName: currentVoucher.recipientName || '',
-      receiverEmail: currentVoucher.recipientEmail || '',
-      amount: currentVoucher.amount || 0,
-      code: currentVoucher.code || '',
-      productName: currentVoucher.productName || '',
-      companyName: currentVoucher.companyName || 'Our Company',
-      storeName: currentVoucher.storeName || 'Our Store',
-      storeAddress: currentVoucher.storeAddress || '123 Store Address, City',
-      storeEmail: 'store@example.com',
-      storePhone: '+1 (123) 456-7890',
-      storeSocial: '@storename',
-      storeLogo: 'https://placehold.co/150x150/png',
-      expirationDate: currentVoucher.expirationDate 
-        ? new Date(currentVoucher.expirationDate).toLocaleDateString() 
-        : 'No expiration',
-      qrCode: currentVoucher.qrCode || ''
-    };
-
-    const templateType = currentVoucher.template?.toLowerCase() || 'template1';
-    
-    switch (templateType) {
-      case 'template1':
-        return <Template1 {...templateProps} />;
-      case 'template2':
-        return <Template2 {...templateProps} />;
-      case 'template3':
-        return <Template3 {...templateProps} />;
-      case 'template4':
-        return <Template4 {...templateProps} />;
-      case 'template5':
-        return <Template5 {...templateProps} />;
-      default:
-        return <Template1 {...templateProps} />;
-    }
-  };
-
-  const isVoucherRedeemed = redeemed || (currentVoucher && (currentVoucher.isRedeemed || currentVoucher.status === 'redeemed'));
-  const isVoucherExpired = currentVoucher && currentVoucher.expirationDate 
-    ? new Date(currentVoucher.expirationDate) < new Date() 
-    : false;
 
   return (
-    <>
+    <DashboardLayout>
       <Head>
-        <title>Redeem Voucher | Gifty</title>
+        <title>Redeem Voucher | Dashboard</title>
+        <meta name="description" content="Redeem a gift voucher" />
       </Head>
-      <DashboardLayout>
-        <Card>
-          <Title level={2}>
-            <GiftOutlined /> Voucher Redemption
-          </Title>
-          <Divider />
-          
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            {!currentVoucher && (
-              <Row gutter={16}>
-                <Col xs={24} sm={16}>
-                  <Input
-                    placeholder="Enter voucher code"
-                    value={voucherCode}
-                    onChange={(e) => setVoucherCode(e.target.value)}
-                    size="large"
-                    onPressEnter={() => handleSearch(voucherCode)}
-                  />
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Button 
-                    type="primary" 
-                    onClick={() => handleSearch(voucherCode)} 
-                    loading={isSearching}
-                    size="large"
-                    block
-                  >
-                    Search
-                  </Button>
-                </Col>
-              </Row>
-            )}
+      
+      <Content style={{ padding: '24px', maxWidth: 800, margin: '0 auto' }}>
+        <Title level={2}>Redeem Voucher</Title>
+        
+        <Space direction="vertical" size="large" style={{ width: '100%', marginTop: 24 }}>
+          <Space.Compact style={{ width: '100%' }}>
+            <Input
+              placeholder="Enter voucher code"
+              value={voucherCode}
+              onChange={(e) => setVoucherCode(e.target.value)}
+              onPressEnter={handleSearch}
+              disabled={loading}
+            />
+            <Button 
+              type="primary" 
+              onClick={handleSearch}
+              loading={loading}
+            >
+              Search
+            </Button>
+          </Space.Compact>
 
-            {loading && <Spin tip="Loading voucher details..." />}
+          {error && !showRedemption && (
+            <Alert
+              message="Error"
+              description={error}
+              type="error"
+              showIcon
+            />
+          )}
 
-            {error && !loading && (
-              <Card style={{ background: '#FFF2F0', borderColor: '#FFCCC7' }}>
-                <Space>
-                  <CloseCircleOutlined style={{ color: '#F5222D' }} />
-                  <Text strong>Error: Voucher not found or invalid.</Text>
-                </Space>
-              </Card>
-            )}
-
-            {currentVoucher && (
-              <>
-                <Card 
-                  style={{ 
-                    background: isVoucherRedeemed ? '#F6FFED' : 
-                              isVoucherExpired ? '#FFF2F0' : '#FFFFFF',
-                    borderColor: isVoucherRedeemed ? '#B7EB8F' : 
-                                isVoucherExpired ? '#FFCCC7' : '#D9D9D9'
-                  }}
-                >
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24}>
-                      {isVoucherRedeemed && (
-                        <div style={{ marginBottom: 16 }}>
-                          <Space>
-                            <CheckCircleOutlined style={{ color: '#52C41A' }} />
-                            <Text strong style={{ color: '#52C41A' }}>
-                              This voucher has been redeemed
-                            </Text>
-                          </Space>
-                        </div>
-                      )}
-                      
-                      {isVoucherExpired && (
-                        <div style={{ marginBottom: 16 }}>
-                          <Space>
-                            <CloseCircleOutlined style={{ color: '#F5222D' }} />
-                            <Text strong style={{ color: '#F5222D' }}>
-                              This voucher has expired
-                            </Text>
-                          </Space>
-                        </div>
-                      )}
-                      
-                      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                        {renderVoucherTemplate()}
-                      </div>
-                    </Col>
-                  </Row>
-                </Card>
-
-                <Row justify="center">
-                  <Col>
-                    <Button
-                      type="primary"
-                      size="large"
-                      onClick={handleRedeem}
-                      loading={submitting}
-                      disabled={isVoucherRedeemed || isVoucherExpired}
-                    >
-                      {isVoucherRedeemed ? 'Already Redeemed' : 'Redeem Voucher'}
-                    </Button>
-                  </Col>
-                </Row>
-              </>
-            )}
-          </Space>
-        </Card>
-      </DashboardLayout>
-    </>
+          {showRedemption && voucherData && (
+            <VoucherRedemption
+              voucher={voucherData}
+              onRedeem={handleRedeem}
+              isRedeeming={submitting}
+              redeemSuccess={redeemSuccess}
+              error={redeemError}
+            />
+          )}
+        </Space>
+      </Content>
+    </DashboardLayout>
   );
 };
 
-export default VoucherRedemptionPage; 
+export default VoucherRedeemPage; 

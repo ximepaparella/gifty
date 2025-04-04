@@ -21,6 +21,24 @@ export interface Voucher {
   updatedAt: string
 }
 
+export interface VoucherOrder {
+  _id: string
+  customerId: string
+  voucher: Voucher
+  paymentDetails: {
+    amount: number
+    paymentEmail: string
+    paymentId: string
+    provider: string
+    status: string
+  }
+  emailsSent: boolean
+  pdfGenerated: boolean
+  pdfUrl: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface VoucherFormData {
   storeId: string
   productId: string
@@ -49,11 +67,8 @@ export interface VouchersResponse {
 export interface VouchersState {
   vouchers: Voucher[]
   selectedVoucher: Voucher | null
+  currentVoucher: VoucherOrder | null
   loading: boolean
   submitting: boolean
-  pagination: {
-    current: number
-    pageSize: number
-    total: number
-  }
+  error: string | null
 } 

@@ -1,10 +1,27 @@
-import { Space, Typography } from 'antd'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import { Spin } from 'antd'
+import { authService } from '@/features/auth/services/authService'
 import Head from 'next/head'
-import Link from 'next/link'
-
-const { Title } = Typography
 
 export default function Home() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const session = authService.getSession()
+    
+    if (session) {
+      router.replace('/dashboard')
+    } else {
+      router.replace('/auth/login')
+    }
+    
+    setIsLoading(false)
+  }, [router])
+
+  // Show loading state while checking authentication
   return (
     <>
       <Head>
@@ -13,15 +30,15 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main>
-        <Title>Welcome to Gifty</Title>
-        <Title level={2}>Your Gift Vouchers Platform</Title>
-        <Space>
-        <Link href="/auth/login">Login</Link>
-        <Link href="/auth/register">Register</Link>
-        <Link href="/dashboard">Dashboard</Link>
-      </Space>
-      </main>
+      <div style={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        backgroundColor: '#f0f2f5'
+      }}>
+        <Spin size="large" tip="Loading..." />
+      </div>
     </>
   )
 } 

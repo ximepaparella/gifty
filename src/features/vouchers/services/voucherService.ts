@@ -1,4 +1,4 @@
-import { Voucher, VoucherFormData, VouchersResponse } from '../types'
+import { Voucher, VoucherFormData, VouchersResponse, VoucherOrder } from '../types'
 import axios from 'axios'
 import { authService } from '@/features/auth/services/authService'
 import { extractApiResponse } from '@/utils/apiUtils'
@@ -95,21 +95,22 @@ export const getVoucherById = async (id: string): Promise<Voucher> => {
 };
 
 // Get voucher by code
-export const getVoucherByCode = async (code: string): Promise<Voucher> => {
+export const getVoucherByCode = async (code: string): Promise<VoucherOrder> => {
   try {
+    if (!code || typeof code !== 'string') {
+      throw new Error('Voucher code is required');
+    }
+
     console.log(`Fetching voucher with code: ${code}`);
     
-    // Log the complete API URL being called
     const config = getApiConfig();
     
-    // Fixed API URL - don't include /api/v1 since it's already in the baseURL
-    const apiUrl = `/vouchers/code/${code}/redeem`;
+    // Use the correct endpoint matching the redeem endpoint
+    const apiUrl = `/orders/voucher/${code}`;
     console.log(`API URL being called: ${config.baseURL}${apiUrl}`);
     
-    // Make the API call with proper error handling
     const response = await axios.get(apiUrl, config);
     
-    // Log the response data structure to debug
     console.log('API response for voucher code:', {
       status: response.status,
       statusText: response.statusText,
@@ -118,17 +119,15 @@ export const getVoucherByCode = async (code: string): Promise<Voucher> => {
       data: response.data
     });
     
-    return extractApiResponse<Voucher>(response);
+    return extractApiResponse<VoucherOrder>(response);
   } catch (error: any) {
     console.error('Error fetching voucher by code:', error);
     
-    // Enhanced error logging
     if (error.response) {
       console.error('Error response status:', error.response.status);
       console.error('Error response data:', error.response.data);
     }
     
-    // Provide a more specific error message
     throw new Error(error.response?.data?.message || `Failed to fetch voucher with code ${code}`);
   }
 };
@@ -199,33 +198,35 @@ export const deleteVoucher = async (id: string): Promise<void> => {
 // Redeem voucher
 export const redeemVoucher = async (code: string): Promise<boolean> => {
   try {
+    if (!code || typeof code !== 'string') {
+      throw new Error('Voucher code is required');
+    }
+
     const config = getApiConfig();
     
-    // Fixed API URL - don't include /api/v1 prefix since it's already in baseURL
-    const apiUrl = `/vouchers/code/${code}/redeem`;
+    // Use the correct endpoint
+    const apiUrl = `/orders/voucher/${code}/redeem`;
     console.log(`Redeeming voucher with URL: ${config.baseURL}${apiUrl}`);
     
-    const response = await axios.post(apiUrl, {}, config);
+    const response = await axios.put(apiUrl, {}, config);
     
-    console.log('Redeem voucher response:', {
+    console.log('Redeem response:', {
       status: response.status,
+      statusText: response.statusText,
       data: response.data
     });
     
-    if (response.data && response.data.status === 'success') {
-      return true;
+    // Check if the redemption was successful
+    if (response.data?.success === false) {
+      throw new Error(response.data?.message || 'Failed to redeem voucher');
     }
     
-    return false;
+    return true;
   } catch (error: any) {
     console.error('Error redeeming voucher:', error);
+    console.error('Redeem error status:', error.response?.status);
+    console.error('Redeem error data:', error.response?.data);
     
-    // Enhanced error logging
-    if (error.response) {
-      console.error('Redeem error status:', error.response.status);
-      console.error('Redeem error data:', error.response.data);
-    }
-    
-    throw new Error(error.response?.data?.message || `Failed to redeem voucher with code ${code}`);
+    throw new Error(error.response?.data?.message || `Failed to redeem voucher ${code}`);
   }
 }; 
