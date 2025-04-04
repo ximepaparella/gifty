@@ -60,9 +60,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
         return;
       }
 
-      // Get the actual File object from the Upload component
-      const currentImage = fileList[0]?.originFileObj;
-
       // Create form data with all required fields
       const formData: ProductFormData = {
         name: values.name,
@@ -70,12 +67,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
         price: values.price,
         storeId: selectedStoreId,
         isActive: true,
+        image: imageFile // Use the imageFile state directly
       };
 
-      // Only add image if we have a valid File object
-      if (currentImage instanceof File) {
-        formData.image = currentImage;
-      }
+      console.log('Submitting product with data:', formData);
+      console.log('Image file:', imageFile);
       
       await onSubmit(formData);
       if (!initialValues) {
@@ -90,16 +86,21 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    const file = newFileList[0];
+    console.log('Upload onChange:', newFileList);
+    setFileList(newFileList);
     
-    // Only update if it's a new file or clearing the list
-    if ((file?.originFileObj instanceof File) || newFileList.length === 0) {
-      setFileList(newFileList);
-      setImageFile(file?.originFileObj || null);
+    // Update imageFile when there's a new file
+    if (newFileList.length > 0 && newFileList[0].originFileObj) {
+      setImageFile(newFileList[0].originFileObj);
+      console.log('Setting image file:', newFileList[0].originFileObj);
+    } else {
+      setImageFile(null);
+      console.log('Clearing image file');
     }
   };
 
   const beforeUpload = (file: RcFile) => {
+    console.log('beforeUpload file:', file);
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
       message.error('Solo se permiten archivos de imagen');
@@ -114,6 +115,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleRemove = () => {
+    console.log('Removing image');
     setImageFile(null);
     setFileList([]);
     return true;
@@ -197,6 +199,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <Form.Item
           name="image"
           label="Imagen del Producto"
+          valuePropName="fileList"
+          getValueFromEvent={(e) => {
+            console.log('Upload event:', e);
+            if (Array.isArray(e)) {
+              return e;
+            }
+            return e?.fileList;
+          }}
         >
           <Upload
             accept="image/*"

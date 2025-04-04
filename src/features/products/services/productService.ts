@@ -76,69 +76,86 @@ export const getProductById = async (id: string): Promise<Product> => {
 
 export const createProduct = async (productData: ProductFormData): Promise<Product> => {
   try {
-    // Validate store ID first
-    if (!productData.storeId) {
-      throw new Error('Store ID is required');
-    }
+    console.log('Creating product with data:', productData);
+    console.log('Image is File?', productData.image instanceof File);
 
     // If there's an image file, use FormData
     if (productData.image instanceof File) {
       const formData = new FormData();
       
-      // Add image file
-      formData.append('image', productData.image);
+      // Add image file first
+      formData.append('image', productData.image, productData.image.name);
       
-      // Create the data object without the image
+      // Create data object without image
       const { image, ...productDataWithoutImage } = productData;
       
-      // Add the data as a JSON string
-      formData.append('data', JSON.stringify({
-        ...productDataWithoutImage,
-        isActive: true
-      }));
+      // Add data as JSON string
+      formData.append('data', JSON.stringify(productDataWithoutImage));
+      
+      console.log('Sending multipart form data:', {
+        imageName: productData.image.name,
+        imageType: productData.image.type,
+        imageSize: productData.image.size,
+        data: productDataWithoutImage
+      });
       
       const config = getApiConfig(true);
       const response = await axios.post('/products', formData, config);
       return extractApiResponse(response);
     } else {
-      // If no image file, send as regular JSON with isActive
+      // If no image file, send as regular JSON
+      console.log('Sending regular JSON data');
       const { image, ...productDataWithoutImage } = productData;
       const config = getApiConfig();
-      const response = await axios.post('/products', {
-        ...productDataWithoutImage,
-        isActive: true
-      }, config);
+      const response = await axios.post('/products', productDataWithoutImage, config);
       return extractApiResponse(response);
     }
   } catch (error: any) {
     console.error('Error creating product:', error);
+    console.error('Error response:', error.response?.data);
     throw new Error(error.response?.data?.message || 'Failed to create product');
   }
 };
 
 export const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<Product> => {
   try {
+    console.log('Updating product with data:', productData);
+    console.log('Image is File?', productData.image instanceof File);
+
     // If there's an image file, use FormData
     if (productData.image instanceof File) {
       const formData = new FormData();
-      formData.append('image', productData.image);
       
-      // Append other product data as JSON string
-      const productDataWithoutImage = { ...productData };
-      delete productDataWithoutImage.image;
+      // Add image file first
+      formData.append('image', productData.image, productData.image.name);
+      
+      // Create data object without image
+      const { image, ...productDataWithoutImage } = productData;
+      
+      // Add data as JSON string
       formData.append('data', JSON.stringify(productDataWithoutImage));
+      
+      console.log('Sending multipart form data:', {
+        imageName: productData.image.name,
+        imageType: productData.image.type,
+        imageSize: productData.image.size,
+        data: productDataWithoutImage
+      });
       
       const config = getApiConfig(true);
       const response = await axios.put(`/products/${id}`, formData, config);
       return extractApiResponse(response);
     } else {
       // If no image file, send as regular JSON
+      console.log('Sending regular JSON data');
+      const { image, ...productDataWithoutImage } = productData;
       const config = getApiConfig();
-      const response = await axios.put(`/products/${id}`, productData, config);
+      const response = await axios.put(`/products/${id}`, productDataWithoutImage, config);
       return extractApiResponse(response);
     }
   } catch (error: any) {
     console.error('Error updating product:', error);
+    console.error('Error response:', error.response?.data);
     throw new Error(error.response?.data?.message || 'Failed to update product');
   }
 };

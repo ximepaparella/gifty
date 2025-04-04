@@ -31,23 +31,28 @@ const StoreForm: React.FC<StoreFormProps> = ({
   const router = useRouter()
   const [currentOwner, setCurrentOwner] = useState<User | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [fileList, setFileList] = useState<UploadFile[]>([])
-  
-  // Initialize fileList with existing logo if available
-  useEffect(() => {
+  const [fileList, setFileList] = useState<UploadFile[]>(() => {
+    // Initialize fileList with initial logo if available
     if (initialValues?.logo) {
+      const timestamp = new Date().getTime();
       const logoUrl = initialValues.logo.startsWith('http') 
-        ? initialValues.logo 
-        : `${process.env.NEXT_PUBLIC_API_URL}${initialValues.logo}`
+        ? `${initialValues.logo}?t=${timestamp}` 
+        : `${process.env.NEXT_PUBLIC_API_URL}${initialValues.logo}?t=${timestamp}`;
       
-      setFileList([{
+      return [{
         uid: '-1',
         name: 'store-logo',
         status: 'done',
         url: logoUrl
-      }])
+      }];
     }
-  }, [initialValues?.logo])
+    return [];
+  })
+  const userSelectedFile = React.useRef(false)
+  const formInitialized = React.useRef(false)
+  
+  console.log('StoreForm rendered - isEditMode:', isEditMode)
+  console.log('StoreForm initialValues:', initialValues)
   
   // Fetch users for the owner dropdown
   const { data: usersData, isLoading: loadingUsers } = useQuery({
@@ -74,27 +79,41 @@ const StoreForm: React.FC<StoreFormProps> = ({
     }
   }, [initialValues?.ownerId, users])
 
+  // Initialize form fields only once
   useEffect(() => {
-    if (initialValues) {
-      console.log("Initial values for store form:", initialValues)
-      
-      form.setFieldsValue({
-        name: initialValues.name,
-        email: initialValues.email,
-        phone: initialValues.phone,
-        address: initialValues.address,
-        ownerId: initialValues.ownerId,
-        instagram: initialValues.social?.instagram,
-        facebook: initialValues.social?.facebook,
-        tiktok: initialValues.social?.tiktok,
-        youtube: initialValues.social?.youtube,
-        others: initialValues.social?.others || []
-      })
+    if (!initialValues || formInitialized.current) {
+      return;
     }
-  }, [initialValues, form])
+
+    console.log("Initial form setup - setting fields");
+    form.setFieldsValue({
+      name: initialValues.name,
+      email: initialValues.email,
+      phone: initialValues.phone,
+      address: initialValues.address,
+      ownerId: initialValues.ownerId,
+      instagram: initialValues.social?.instagram,
+      facebook: initialValues.social?.facebook,
+      tiktok: initialValues.social?.tiktok,
+      youtube: initialValues.social?.youtube,
+      others: initialValues.social?.others || []
+    });
+    
+    formInitialized.current = true;
+    console.log("Form initialization complete");
+  }, [initialValues]);
 
   const handleSubmit = async (values: any) => {
     try {
+      console.log('========== FORM SUBMISSION START ==========')
+      console.log('Form values:', values)
+      console.log('Form submission - logoFile state:', logoFile)
+      console.log('Form submission - fileList state:', fileList)
+      console.log('userSelectedFile flag:', userSelectedFile.current)
+      
+      // Track if we're updating the logo
+      const isUpdatingLogo = isEditMode && logoFile !== null;
+      
       const formData: StoreFormData = {
         name: values.name,
         email: values.email,
@@ -111,39 +130,88 @@ const StoreForm: React.FC<StoreFormProps> = ({
         }
       }
       
+      console.log('Submitting store with data:', formData)
+      console.log('Is Edit Mode:', isEditMode)
+      console.log('Is Updating Logo:', isUpdatingLogo)
+      console.log('File being sent in request:', logoFile)
+      
       await onSubmit(formData)
+      console.log('Submission completed successfully')
+      
+      // Reset userSelectedFile flag after successful submission
+      userSelectedFile.current = false;
+      console.log('userSelectedFile flag reset to false after submission')
+      
       if (!initialValues) {
+        console.log('No initialValues, resetting form')
         form.resetFields()
         setLogoFile(null)
         setFileList([])
+      } else {
+        console.log('Update mode, not resetting form')
+        
+        // No need to clear the fileList in update mode
+        // The useEffect will handle updating the fileList when initialValues changes
+        // Just clear the logoFile state so we don't keep it in memory
+        if (isUpdatingLogo) {
+          console.log('Logo was updated, clearing logoFile state but keeping fileList')
+          setLogoFile(null)
+        }
       }
+      console.log('========== FORM SUBMISSION END ==========')
     } catch (error) {
       console.error('Error submitting form:', error)
     }
   }
 
   const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
+    console.log('========== UPLOAD CHANGE START ==========')
+    console.log('handleChange triggered with newFileList:', newFileList)
+    
+    // Update fileList state
     setFileList(newFileList)
+    
+    // Handle new file selection
+    if (newFileList.length > 0 && newFileList[0].originFileObj) {
+      console.log('New file selected:', newFileList[0].originFileObj)
+      setLogoFile(newFileList[0].originFileObj)
+      userSelectedFile.current = true
+    } else if (newFileList.length === 0) {
+      console.log('Clearing file states')
+      setLogoFile(null)
+      userSelectedFile.current = false
+    }
+    
+    console.log('========== UPLOAD CHANGE END ==========')
   }
 
   const beforeUpload = (file: RcFile) => {
+    console.log('========== BEFORE UPLOAD START ==========')
+    
     const isImage = file.type.startsWith('image/')
     if (!isImage) {
       message.error('You can only upload image files!')
       return false
     }
+    
     const isLt2M = file.size / 1024 / 1024 < 2
     if (!isLt2M) {
       message.error('Image must be smaller than 2MB!')
       return false
     }
-    setLogoFile(file)
+    
+    console.log('File passed validation')
+    console.log('========== BEFORE UPLOAD END ==========')
     return false // Prevent auto upload
   }
 
   const handleRemove = () => {
+    console.log('========== REMOVE START ==========')
     setLogoFile(null)
     setFileList([])
+    userSelectedFile.current = false
+    console.log('States cleared')
+    console.log('========== REMOVE END ==========')
     return true
   }
 

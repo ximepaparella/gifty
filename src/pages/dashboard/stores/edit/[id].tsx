@@ -78,12 +78,33 @@ const EditStorePage = () => {
     )
   }
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = async (values: any) => {
     const { id } = router.query
     if (!id) {
       return Promise.reject('No se pudo encontrar la tienda especificada. Por favor, inténtelo de nuevo o seleccione una tienda diferente.')
     }
-    return handleUpdateStore(id as string, values)
+    
+    // Check if we're updating the image
+    const isUpdatingImage = values.logo instanceof File;
+    
+    try {
+      // Update the store
+      await handleUpdateStore(id as string, values)
+      
+      // If updating an image, add a delay to allow Cloudinary to process and propagate the new image
+      if (isUpdatingImage) {
+        console.log("Image was updated, adding delay before refetching store data");
+        await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
+      }
+      
+      // After successful update, fetch the updated store data
+      console.log("Re-fetching store data after update");
+      await fetchStoreById(id as string);
+      
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   return (

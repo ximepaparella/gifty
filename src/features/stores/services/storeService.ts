@@ -111,8 +111,20 @@ export const createStore = async (storeData: StoreFormData): Promise<Store> => {
 
 export const updateStore = async (id: string, storeData: Partial<StoreFormData>): Promise<Store> => {
   try {
+    console.log('========== UPDATE STORE SERVICE START ==========');
+    console.log('Updating store with ID:', id);
+    console.log('Store data received:', storeData);
+    console.log('Logo type:', storeData.logo ? (storeData.logo instanceof File ? 'File object' : typeof storeData.logo) : 'undefined/null');
+    
     // If there's a logo file, use FormData
     if (storeData.logo instanceof File) {
+      console.log('Logo is a File object, using FormData');
+      console.log('Logo file details:', {
+        name: storeData.logo.name,
+        type: storeData.logo.type,
+        size: storeData.logo.size
+      });
+      
       const formData = new FormData();
       formData.append('logo', storeData.logo);
       
@@ -121,17 +133,29 @@ export const updateStore = async (id: string, storeData: Partial<StoreFormData>)
       delete storeDataWithoutLogo.logo;
       formData.append('data', JSON.stringify(storeDataWithoutLogo));
       
+      console.log('FormData prepared with logo file and JSON data');
+      console.log('JSON data part:', JSON.stringify(storeDataWithoutLogo));
+      
       const config = getApiConfig(true);
+      console.log('Making PUT request with multipart/form-data');
       const response = await axios.put(`/stores/${id}`, formData, config);
+      console.log('Update response:', response.data);
       return extractApiResponse<Store>(response);
     } else {
       // If no logo file, send as regular JSON
+      console.log('No logo File object, using regular JSON');
+      console.log('Complete data being sent:', storeData);
+      
       const config = getApiConfig();
+      console.log('Making PUT request with application/json');
       const response = await axios.put(`/stores/${id}`, storeData, config);
+      console.log('Update response:', response.data);
       return extractApiResponse<Store>(response);
     }
   } catch (error: any) {
     console.error('Error updating store:', error);
+    console.error('Error details:', error.response?.data || error.message);
+    console.log('========== UPDATE STORE SERVICE END (ERROR) ==========');
     throw new Error(error.response?.data?.message || 'Failed to update store');
   }
 };
