@@ -224,11 +224,11 @@ const OrdersPage: React.FC = () => {
 
       <Card
         title="Orders"
-        extra={
-          <Link href="/dashboard/orders/create">
-            <Button type="primary">Create Order</Button>
-          </Link>
-        }
+        // extra={
+        //   <Link href="/dashboard/orders/create">
+        //     <Button type="primary">Create Order</Button>
+        //   </Link>
+        // }
       >
         <Table
           columns={columns}

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import { App } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Voucher, VoucherFormData } from '../types'
+import { Voucher, VoucherFormData, VoucherOrder, VouchersResponse } from '../types'
 import { 
   getVouchers, 
   getVoucherById, 
@@ -18,6 +18,14 @@ const VOUCHERS_QUERY_KEY = 'vouchers'
 const VOUCHER_DETAIL_QUERY_KEY = 'voucher-detail'
 const VOUCHER_BY_CODE_KEY = 'voucher-by-code'
 
+interface VouchersState {
+  selectedVoucher: Voucher | null;
+  currentVoucher: VoucherOrder | null;
+  loading: boolean;
+  submitting: boolean;
+  error: string | null;
+}
+
 export const useVouchers = () => {
   const { notification } = App.useApp();
   const router = useRouter()
@@ -29,12 +37,12 @@ export const useVouchers = () => {
     sort: ''
   })
   
-  const [state, setState] = useState<any>({
+  const [state, setState] = useState<VouchersState>({
     selectedVoucher: null,
-    currentVoucher: null, // For redemption flow
+    currentVoucher: null,
     loading: false,
     submitting: false,
-    error: null // For tracking errors in redemption flow
+    error: null
   })
 
   // Fetch vouchers list with pagination
@@ -85,7 +93,7 @@ export const useVouchers = () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const voucher = await getVoucherByCode(code);
-      setState(prev => ({ ...prev, currentVoucher: voucher, loading: false }));
+      setState(prev => ({ ...prev, currentVoucher: voucher as VoucherOrder, loading: false }));
       return voucher;
     } catch (error: any) {
       notification.error({
@@ -101,21 +109,25 @@ export const useVouchers = () => {
   const redeemVoucherFn = useCallback(async (code: string) => {
     try {
       setState(prev => ({ ...prev, submitting: true, error: null }));
+      console.log('Attempting to redeem voucher with code:', code);
+      
       const result = await redeemVoucherAPI(code);
+      console.log('Redeem API result:', result);
       
       // Update the current voucher with the redeemed status
-      if (result && state.currentVoucher) {
-        setState(prev => ({ 
-          ...prev, 
-          currentVoucher: { 
-            ...prev.currentVoucher, 
+      setState(prev => ({ 
+        ...prev, 
+        currentVoucher: prev.currentVoucher ? {
+          ...prev.currentVoucher,
+          voucher: {
+            ...prev.currentVoucher.voucher,
             status: 'redeemed',
             isRedeemed: true,
             redeemedAt: new Date().toISOString()
-          }, 
-          submitting: false 
-        }));
-      }
+          }
+        } : null,
+        submitting: false 
+      }));
       
       notification.success({
         message: 'Success',
@@ -124,6 +136,7 @@ export const useVouchers = () => {
       
       return result;
     } catch (error: any) {
+      console.error('Error redeeming voucher:', error);
       notification.error({
         message: 'Error redeeming voucher',
         description: error.message
@@ -131,7 +144,7 @@ export const useVouchers = () => {
       setState(prev => ({ ...prev, submitting: false, error: error.message }));
       throw error;
     }
-  }, [notification, state.currentVoucher]);
+  }, [notification]);
 
   // Create voucher mutation
   const createVoucherMutation = useMutation({
@@ -231,10 +244,10 @@ export const useVouchers = () => {
   return {
     vouchers: vouchersData?.data || [],
     selectedVoucher: state.selectedVoucher,
-    currentVoucher: state.currentVoucher, // For redemption flow
+    currentVoucher: state.currentVoucher,
     loading: isLoading || state.loading,
     submitting: state.submitting,
-    error: state.error, // For redemption flow
+    error: state.error,
     pagination: {
       current: paginationParams.current,
       pageSize: paginationParams.pageSize,
