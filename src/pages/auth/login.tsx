@@ -16,10 +16,14 @@ export default function Login() {
   
   // If already authenticated, redirect to dashboard
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      router.push('/dashboard')
+    const checkAuth = () => {
+      if (authService.isAuthenticated()) {
+        router.push('/dashboard')
+      }
     }
-  }, [router])
+    
+    checkAuth()
+  }, []) // Remove router from dependencies
   
   const onFinish = async (values: LoginCredentials) => {
     try {
@@ -107,7 +111,7 @@ export default function Login() {
               </Form.Item>
             </Form>
             
-            <Text>
+            <Text type="secondary">
               Don't have an account? <Link href="/auth/register">Register</Link>
             </Text>
           </Space>
