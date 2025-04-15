@@ -4,6 +4,9 @@ import Cookies from 'js-cookie'
 import { AuthSession, UserInfo } from '../types'
 import { extractApiResponse } from '@/utils/apiUtils'
 
+// Set up axios defaults with API key
+axios.defaults.headers.common['X-API-Key'] = process.env.NEXT_PUBLIC_API_KEY
+
 export interface LoginCredentials {
   email: string
   password: string
@@ -58,15 +61,23 @@ export const authService = {
       }
       
       // Your real API call
-      const response = await axios.post(`${API_URL}/login`, credentials)
+      const response = await axios.post(`${API_URL}/users/login`, credentials, {
+        headers: {
+          'X-API-Key': process.env.NEXT_PUBLIC_API_KEY
+        }
+      })
       
-      if (!response.data || response.data.status !== 'success') {
+      // Check if the response has the expected structure
+      if (!response.data || !response.data.success) {
         throw new Error(response.data?.message || 'Login failed')
       }
       
-      // Extract response data using the utility
-      const responseData = extractApiResponse<LoginResponse>(response)
-      const { user, token } = responseData
+      // Extract user and token from the response data
+      const { token, user } = response.data.data
+      
+      if (!token || !user) {
+        throw new Error('Invalid response format: missing token or user data')
+      }
       
       // Store in both localStorage and cookies
       localStorage.setItem('auth_token', token)
@@ -76,9 +87,19 @@ export const authService = {
       Cookies.set('auth_token', token, { expires: 1, path: '/' }) // 1 day expiry
       
       return { user, token }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error)
-      throw error
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        throw new Error(error.response.data?.message || 'Login failed')
+      } else if (error.request) {
+        // The request was made but no response was received
+        throw new Error('No response from server. Please try again.')
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        throw new Error(error.message || 'Login failed')
+      }
     }
   },
   
@@ -136,6 +157,8 @@ export const authService = {
         if (token) {
           config.headers['Authorization'] = `Bearer ${token}`
         }
+        // Ensure API key is always present
+        config.headers['X-API-Key'] = process.env.NEXT_PUBLIC_API_KEY
         return config
       },
       (error) => Promise.reject(error)

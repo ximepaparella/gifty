@@ -22,15 +22,16 @@ const getApiConfig = (isMultipart = false) => {
   const token = authService.getToken();
   return {
     baseURL: API_URL,
-    headers: token ? {
-      'Authorization': `Bearer ${token}`,
+    headers: {
+      'X-API-Key': process.env.NEXT_PUBLIC_API_KEY,
+      ...(token ? {
+        'Authorization': `Bearer ${token}`,
+      } : {}),
       ...(isMultipart ? {
         'Content-Type': 'multipart/form-data'
       } : {
         'Content-Type': 'application/json'
       })
-    } : {
-      'Content-Type': isMultipart ? 'multipart/form-data' : 'application/json'
     }
   };
 };
