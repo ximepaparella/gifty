@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, InputNumber, Upload, Select, message } from 'antd';
+import { Form, Input, Button, Card, InputNumber, Upload, Select, message, Spin } from 'antd';
 import { Product, ProductFormData } from '../types';
 import { useRouter } from 'next/router';
 import { UploadOutlined } from '@ant-design/icons';
 import { RcFile, UploadFile, UploadProps } from 'antd/lib/upload/interface';
 import { useStores } from '@/features/stores/hooks/useStores';
 import { Types } from 'mongoose';
+import { uploadProductImage } from '../services/productService';
 
 const { Option } = Select;
 
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png'];
+const ERROR_MESSAGES = {
+  FILE_TYPE: 'Solo se permiten archivos JPG y PNG',
+  FILE_SIZE: 'La imagen no debe superar los 2MB',
+  REQUIRED_NAME: 'Por favor ingrese el nombre del producto',
+  REQUIRED_DESCRIPTION: 'Por favor ingrese una descripción',
+  MIN_DESCRIPTION: 'La descripción debe tener al menos 10 caracteres',
+  REQUIRED_PRICE: 'Por favor ingrese el precio',
+};
+
 interface ProductFormProps {
   initialValues?: Partial<Product>;
-  onSubmit: (data: ProductFormData) => Promise<void>;
+  onSubmit: (data: Omit<ProductFormData, 'image'>) => Promise<Product>;
   loading?: boolean;
   storeId?: string;
 }
@@ -27,127 +39,113 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>(() => {
     if (initialValues?.image) {
-      const timestamp = new Date().getTime();
-      const imageUrl = initialValues.image.startsWith('http') 
-        ? `${initialValues.image}?t=${timestamp}` 
-        : `${process.env.NEXT_PUBLIC_API_URL}${initialValues.image}?t=${timestamp}`;
-      
       return [{
         uid: '-1',
-        name: 'product-image',
+        name: 'current-image',
         status: 'done',
-        url: imageUrl
+        url: initialValues.image
       }];
     }
     return [];
   });
   const { stores, loading: loadingStores } = useStores();
-  const userSelectedFile = React.useRef(false);
-  const formInitialized = React.useRef(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (values: any) => {
     try {
-      console.log('========== FORM SUBMISSION START ==========');
+      setSubmitting(true);
+      console.log('=== Form Submission Start ===');
       console.log('Form values:', values);
       console.log('Image file state:', imageFile);
+      console.log('Is imageFile a File?', imageFile instanceof File);
       console.log('FileList state:', fileList);
       
-      // Get the selected store ID or default store ID
-      const selectedStoreId = values.storeId || defaultStoreId;
-      
-      if (!selectedStoreId) {
-        message.error('Por favor seleccione una tienda');
-        return;
-      }
-
-      // Ensure it's a valid MongoDB ObjectId
-      if (!Types.ObjectId.isValid(selectedStoreId)) {
-        message.error('ID de tienda inválido');
-        return;
-      }
-
-      if (!imageFile) {
-        message.error('Por favor seleccione una imagen');
-        return;
-      }
-
       // Create product data object
-      const productData: ProductFormData = {
-        name: values.name,
-        description: values.description,
-        price: values.price,
-        storeId: selectedStoreId,
-        isActive: true,
-        image: imageFile // Pass the File object directly
+      const productData = {
+        ...values,
+        image: imageFile // Send the actual File object, not the fileList item
       };
-
-      console.log('Submitting product with data:', productData);
-      await onSubmit(productData);
       
+      console.log('Product data being sent:', {
+        ...productData,
+        image: productData.image ? {
+          name: productData.image.name,
+          type: productData.image.type,
+          size: productData.image.size
+        } : null
+      });
+
+      // Submit the form data
+      const response = await onSubmit(productData);
+      console.log('Form submission response:', response);
+      
+      // Reset form if it's a new product
       if (!initialValues) {
-        console.log('No initialValues, resetting form');
         form.resetFields();
         setImageFile(null);
         setFileList([]);
-        userSelectedFile.current = false;
       }
       
-      console.log('========== FORM SUBMISSION END ==========');
+      message.success(initialValues ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente');
     } catch (error) {
       console.error('Error submitting form:', error);
-      message.error('Error al crear el producto');
+      message.error('Error al procesar el formulario');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    console.log('========== UPLOAD CHANGE START ==========');
-    console.log('handleChange triggered with newFileList:', newFileList);
+    console.log('=== File Change Start ===');
+    console.log('New file list:', newFileList);
+    console.log('First file:', newFileList[0]);
+    console.log('First file originFileObj:', newFileList[0]?.originFileObj);
     
-    // Update fileList state
     setFileList(newFileList);
-    
-    // Handle new file selection
     if (newFileList.length > 0 && newFileList[0].originFileObj) {
-      console.log('New file selected:', newFileList[0].originFileObj);
+      console.log('Setting new image file:', {
+        name: newFileList[0].originFileObj.name,
+        type: newFileList[0].originFileObj.type,
+        size: newFileList[0].originFileObj.size
+      });
       setImageFile(newFileList[0].originFileObj);
-      userSelectedFile.current = true;
-    } else if (newFileList.length === 0) {
-      console.log('Clearing file states');
+    } else {
+      console.log('Clearing image file');
       setImageFile(null);
-      userSelectedFile.current = false;
     }
-    
-    console.log('========== UPLOAD CHANGE END ==========');
   };
 
   const beforeUpload = (file: RcFile) => {
-    console.log('========== BEFORE UPLOAD START ==========');
+    console.log('=== Before Upload Start ===');
+    console.log('File being validated:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
     
-    const isImage = file.type.startsWith('image/');
-    if (!isImage) {
-      message.error('Solo se permiten archivos de imagen');
+    const isValidType = ALLOWED_FILE_TYPES.includes(file.type);
+    if (!isValidType) {
+      console.log('Invalid file type:', file.type);
+      message.error(ERROR_MESSAGES.FILE_TYPE);
       return false;
     }
     
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('La imagen debe ser menor a 2MB');
+    const isValidSize = file.size <= MAX_FILE_SIZE;
+    if (!isValidSize) {
+      console.log('Invalid file size:', file.size);
+      message.error(ERROR_MESSAGES.FILE_SIZE);
       return false;
     }
     
-    console.log('File passed validation');
-    console.log('========== BEFORE UPLOAD END ==========');
+    console.log('File validation passed');
     return false; // Prevent auto upload
   };
 
   const handleRemove = () => {
-    console.log('========== REMOVE START ==========');
+    console.log('Removing file');
     setImageFile(null);
     setFileList([]);
-    userSelectedFile.current = false;
-    console.log('States cleared');
-    console.log('========== REMOVE END ==========');
     return true;
   };
 
@@ -157,12 +155,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        initialValues={{
-          name: initialValues?.name,
-          description: initialValues?.description,
-          price: initialValues?.price,
-          storeId: defaultStoreId || initialValues?.storeId
-        }}
+        initialValues={initialValues}
       >
         {!defaultStoreId && (
           <Form.Item
@@ -187,82 +180,62 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
         <Form.Item
           name="name"
-          label="Nombre del Producto"
-          rules={[
-            { required: true, message: 'Por favor ingrese el nombre del producto' },
-            { min: 3, message: 'El nombre debe tener al menos 3 caracteres' }
-          ]}
+          label="Nombre"
+          rules={[{ required: true, message: ERROR_MESSAGES.REQUIRED_NAME }]}
         >
-          <Input placeholder="Ingrese el nombre del producto" />
+          <Input />
         </Form.Item>
 
         <Form.Item
           name="description"
           label="Descripción"
-          rules={[
-            { required: true, message: 'Por favor ingrese la descripción' },
-            { min: 10, message: 'La descripción debe tener al menos 10 caracteres' }
-          ]}
+          rules={[{ required: true, message: ERROR_MESSAGES.REQUIRED_DESCRIPTION }]}
         >
-          <Input.TextArea 
-            rows={4} 
-            placeholder="Ingrese una descripción detallada del producto"
-          />
+          <Input.TextArea rows={4} />
         </Form.Item>
 
         <Form.Item
           name="price"
           label="Precio"
-          rules={[
-            { required: true, message: 'Por favor ingrese el precio' },
-            { type: 'number', min: 0, message: 'El precio debe ser mayor a 0' }
-          ]}
+          rules={[{ required: true, message: ERROR_MESSAGES.REQUIRED_PRICE }]}
         >
           <InputNumber
+            min={0}
             style={{ width: '100%' }}
             formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            parser={value => value!.replace(/\$\s?|(,*)/g, '')}
-            placeholder="Ingrese el precio del producto"
+            parser={(value: string | undefined): 0 | number => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
           />
         </Form.Item>
 
         <Form.Item
-          name="image"
-          label="Imagen del Producto"
-          rules={[{ required: true, message: 'Por favor seleccione una imagen' }]}
+          label="Imagen"
+          extra="Formatos permitidos: JPG, PNG. Tamaño máximo: 2MB"
         >
           <Upload
-            accept="image/*"
-            beforeUpload={beforeUpload}
-            onChange={handleChange}
-            maxCount={1}
             listType="picture-card"
+            maxCount={1}
             fileList={fileList}
+            onChange={handleChange}
+            beforeUpload={beforeUpload}
             onRemove={handleRemove}
-            showUploadList={{
-              showPreviewIcon: true,
-              showRemoveIcon: true,
-            }}
+            accept="image/jpeg,image/png"
           >
             {fileList.length === 0 && (
               <div>
                 <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Subir Imagen</div>
+                <div style={{ marginTop: 8 }}>Subir</div>
               </div>
             )}
           </Upload>
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading || uploadingImage}>
-            {initialValues ? 'Actualizar Producto' : 'Crear Producto'}
-          </Button>
           <Button 
-            style={{ marginLeft: 8 }} 
-            onClick={() => router.push('/dashboard/products')}
-            disabled={uploadingImage}
+            type="primary" 
+            htmlType="submit"
+            loading={submitting}
           >
-            Cancelar
+            {initialValues ? 'Actualizar' : 'Crear'} Producto
           </Button>
         </Form.Item>
       </Form>
